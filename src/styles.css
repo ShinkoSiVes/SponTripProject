@@ -1,7 +1,8 @@
 /* Stitch "Vivid Logic" extras. Tailwind CDN handles layout tokens. */
 
-.screen { display: none; }
-.screen.is-on { display: flex; flex-direction: column; }
+/* !important: Tailwind CDN injects .flex after the bundled CSS in production. */
+.screen { display: none !important; }
+.screen.is-on { display: flex !important; flex-direction: column; }
 .hidden { display: none !important; }
 
 .noise-bg {
