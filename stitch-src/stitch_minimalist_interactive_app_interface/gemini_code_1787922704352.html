@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Download Spontrip PRD</title>
+</head>
+<body>
+    <h2>Generating your Spontrip PRD Word Document...</h2>
+    <p>If the download doesn't start automatically, <a id="download-link" href="#">click here</a>.</p>
+
+    <script>
+        const prdHtmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset="utf-8">
+            <title>Product Requirement Document (PRD): Spontrip</title>
+            <style>
+                body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1f2937; }
+                h1 { font-size: 22pt; color: #111827; border-bottom: 2px solid #3b82f6; padding-bottom: 6px; margin-bottom: 12px; }
+                h2 { font-size: 15pt; color: #1e40af; margin-top: 18pt; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+                h3 { font-size: 12pt; color: #1f2937; margin-top: 12pt; }
+                p { margin-bottom: 8pt; }
+                ul { margin-top: 0; margin-bottom: 8pt; padding-left: 20px; }
+                li { margin-bottom: 4pt; }
+                pre { background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 9.5pt; border-radius: 4px; }
+                table { border-collapse: collapse; width: 100%; margin-top: 10pt; margin-bottom: 12pt; }
+                th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+                th { background-color: #f3f4f6; font-weight: bold; color: #111827; }
+                .code-box { background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; font-family: monospace; font-size: 9pt; white-space: pre-wrap; }
+            </style>
+        </head>
+        <body>
+            <h1>Product Requirement Document (PRD): Spontrip</h1>
+            <hr />
+
+            <h2>1. Executive Summary & Product Positioning</h2>
+            <h3>Product Concept</h3>
+            <p><strong>Spontrip</strong> is a fast-paced, sequential decision tool designed to turn group indecision into instant, zero-effort spontaneous plans ("sponty trips")[cite: 1]. Rather than forcing users through complex comparison tables, <strong>Spontrip</strong> guides them step-by-step through a decision funnel—filtering preferences on event size, activity theme, map location, travel radius, budget, and transit mode to output a matched event[cite: 1].</p>
+
+            <h3>Problem Statement</h3>
+            <p>When friends or dev teams want to take a spontaneous break, endless back-and-forth debates over <em>where to go</em>, <em>how much to spend</em>, and <em>how to get there</em> kill momentum[cite: 1]. <strong>Spontrip</strong> converts group hesitation into a linear, step-by-step game that delivers an actionable verdict in under two minutes[cite: 1].</p>
+
+            <h3>Target Audience</h3>
+            <ul>
+                <li><strong>Spontaneous Groups</strong>: Friends or dev team members at hackathons, events, or post-work hangouts looking for immediate plans[cite: 1].</li>
+                <li><strong>Designated Planners</strong>: Users who want a structured yet quick funnel to break group decision paralysis[cite: 1].</li>
+            </ul>
+
+            <h3>Market Differentiation & Standout Features</h3>
+            <ul>
+                <li><strong>Funnel-Driven UX</strong>: Replaces multi-variable comparison matrices with a guided workflow[cite: 1].</li>
+                <li><strong>Interactive Map Pinning & Radius Sliders</strong>: Integrates visual map placement with real-time distance boundaries[cite: 1].</li>
+                <li><strong>"Keep it Going" Loop</strong>: A continuous flow engine that allows users to instantly plan the <em>next</em> activity (e.g., transition from food to late-night activities) without re-entering baseline details[cite: 1].</li>
+            </ul>
+
+            <h2>2. Feasibility & Scope Evaluation</h2>
+            <ul>
+                <li><strong>Build Time Target</strong>: ~2 hours (Hackathon / Build Event Friendly)[cite: 1].</li>
+                <li><strong>Tech Stack</strong>: Single-file architecture (<code>index.html</code>) using Vanilla JavaScript + Tailwind CSS via CDN + Leaflet.js / Google Maps API + Phosphor Icons[cite: 1].</li>
+                <li><strong>Feasibility & Risk Assessment</strong>:
+                    <ul>
+                        <li><em>Complexity</em>: <strong>Low to Moderate</strong>. The UI follows a step-by-step wizard/card progression[cite: 1].</li>
+                        <li><em>Maps Overhead</em>: Integrating a full Google Maps API key during a quick build can be time-consuming; fallback to <strong>Leaflet.js + OpenStreetMap CDN</strong> ensures zero API key friction while retaining full interactive map functionality[cite: 1].</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2>3. Detailed User Workflow & System Flow Architecture</h2>
+            <p>The system operates on the sequential workflow derived from the diagram[cite: 1]:</p>
+            <div class="code-box">
+[1. Start]
+    │
+    ▼
+[2. Entry Card] ──> "What do you want to do?"
+    │
+    ▼
+[3. Group Size] ──> "How many will be going to the sponty event?"
+    │
+    ▼
+[4. Theme Cards] ──> Select Activity (Food, Trips, Off Country, etc.)
+    │
+    ▼
+[5. Map Selection UI] ──> Pick anchor location on map
+    │
+    ▼
+[6. Travel Radius] ──> "How far along the selected location are you willing to travel?"
+    │
+    ▼
+[7. Budget Limit] ──> "How much are you willing to spend?"
+    │
+    ▼
+[8. Transit Mode] ──> "Are you walking or are you using a vehicle?"
+    │
+    ▼
+[9. Data Matching Engine] ──> Filters places matching criteria
+    │
+    ▼
+[10. Result Card] ──> "Matched you with your perfect event"
+    │
+    ▼
+[11. Loop Prompt] ──> "Do you want to keep the sponty trip going?"
+   ├── YES ──> Loop back to [2. Entry Card] (retrieving next activity)
+   └── NO  ──> [12. Thank You Screen] "Thank you for using Spontrip, enjoy your sponty trip!"
+            </div>
+
+            <h2>4. Component Hierarchy & UX Layout</h2>
+            <div class="code-box">
++-----------------------------------------------------------------------+
+| SPONTRIP v1.0 [ Spontaneous Trip Planner ]                             |
++-----------------------------------------------------------------------+
+| STEP 4 OF 8: LOCATION SELECTION                                       |
+| [========================>                                 ] (Progress)|
++-----------------------------------------------------------------------+
+|                                                                       |
+|   +---------------------------------------------------------------+   |
+|   |                                                               |   |
+|   |                     [ INTERACTIVE MAP UI ]                    |   |
+|   |                                                               |   |
+|   |                    📍 Pin Selected Location                   |   |
+|   |                                                               |   |
+|   +---------------------------------------------------------------+   |
+|                                                                       |
+|   Selected Anchor: Makati City, Metro Manila                          |
+|                                                                       |
++-----------------------------------------------------------------------+
+| [ ← Back ]                                               [ Next Step → ] |
++-----------------------------------------------------------------------+
+            </div>
+
+            <h2>5. Screen-by-Screen Specifications</h2>
+            <h3>Step 1: Start Screen</h3>
+            <p><strong>UI</strong>: Bold title splash screen, vibrant neon theme, single prominent call-to-action (CTA) button[cite: 1].<br/>
+            <strong>Action</strong>: Clicking <strong>"Start Sponty Trip"</strong> triggers Step 2[cite: 1].</p>
+
+            <h3>Step 2: Entry Card ("What do you want to do?")</h3>
+            <p><strong>UI</strong>: Input field / quick category prompts to capture the primary intent[cite: 1].</p>
+
+            <h3>Step 3: Group Size Selection ("How many will be going?")</h3>
+            <p><strong>UI</strong>: Numerical stepper or quick-select pills (<code>1 Person</code>, <code>2-4 Friends</code>, <code>5+ Squad</code>)[cite: 1].</p>
+
+            <h3>Step 4: Theme Cards Selection</h3>
+            <p><strong>UI</strong>: Grid of high-contrast cards themed with activities[cite: 1]:</p>
+            <ul>
+                <li>🍕 <strong>Food & Eats</strong>[cite: 1]</li>
+                <li>🚗 <strong>Short Trips</strong>[cite: 1]</li>
+                <li>✈️ <strong>Off Country / Long Travel</strong>[cite: 1]</li>
+                <li>🎮 <strong>Entertainment & Hangouts</strong>[cite: 1]</li>
+            </ul>
+
+            <h3>Step 5: Interactive Map Location UI</h3>
+            <p><strong>UI</strong>: Embedded interactive map (Leaflet.js / OpenStreetMap or Google Maps UI)[cite: 1].<br/>
+            <strong>Interaction</strong>: Users click or tap anywhere on the map to set their target destination anchor pin[cite: 1].</p>
+
+            <h3>Step 6: Travel Radius Slider ("How far are you willing to travel?")</h3>
+            <p><strong>UI</strong>: Range slider (0.5 km to 50+ km) displaying a dynamic radius overlay circle on the map screen[cite: 1].</p>
+
+            <h3>Step 7: Budget Selection ("How much are you willing to spend?")</h3>
+            <p><strong>UI</strong>: Categorical tier buttons (<code>₱ / $ Budget</code>, <code>₱₱ / $$ Moderate</code>, <code>₱₱₱ / $$$ Splurge</code>) or custom max dollar/peso input[cite: 1].</p>
+
+            <h3>Step 8: Transit Mode Selection ("Walking or Vehicle?")</h3>
+            <p><strong>UI</strong>: Two prominent toggle blocks[cite: 1]:</p>
+            <ul>
+                <li>🚶 <strong>Walking</strong>[cite: 1]</li>
+                <li>🚗 <strong>Using a Vehicle</strong>[cite: 1]</li>
+            </ul>
+
+            <h3>Step 9 & 10: Recommendation Engine & Result Card</h3>
+            <p><strong>Logic</strong>: Filters a curated local dataset based on matching criteria[cite: 1].<br/>
+            <strong>UI</strong>: Displays a <strong>Result Card</strong> with matched location title, rating, distance, estimated cost, and an instant directions button[cite: 1].</p>
+
+            <h3>Step 11 & 12: Continuous Loop & Exit Screen</h3>
+            <p><strong>Loop Prompt Card</strong>: <em>"Do you want to keep the sponty trip going?"</em>[cite: 1]</p>
+            <ul>
+                <li><strong>YES Button</strong>: Saves current trip state and loops back to <strong>Step 2 (Entry Card)</strong> to append an additional activity to the itinerary[cite: 1].</li>
+                <li><strong>NO Button</strong>: Transitions to <strong>Step 12 (Thank You Screen)</strong>: <em>"Thank you for using Spontrip, enjoy your sponty trip!"</em>[cite: 1]</li>
+            </ul>
+
+            <h2>6. Functional & Technical Requirements</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Technical Implementation Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>State Management</strong></td>
+                        <td>Global JS state object tracking <code>groupSize</code>, <code>theme</code>, <code>coords</code>, <code>radius</code>, <code>budget</code>, <code>transitMode</code>, and <code>itineraryArray</code>[cite: 1].</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Map Engine</strong></td>
+                        <td>CDN-based Leaflet.js rendering OpenStreetMap tiles with draggable marker pin support[cite: 1].</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Animation / FX</strong></td>
+                        <td>CSS scale transforms and slide animations between workflow steps to enhance visual feedback[cite: 1].</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Persistence</strong></td>
+                        <td>LocalStorage state backup to prevent data loss if page is accidentally refreshed[cite: 1].</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>7. Implementation Roadmap (~2 Hours)</h2>
+            <ol>
+                <li><strong>0:00 - 0:30</strong>: HTML structure, Tailwind CDN link, step layout container, state object set up[cite: 1].</li>
+                <li><strong>0:30 - 1:00</strong>: Connect map tile API (Leaflet.js) and build input screens (Steps 1–8)[cite: 1].</li>
+                <li><strong>1:00 - 1:30</strong>: Build filter engine logic and <strong>Result Card</strong> render view (Steps 9–10)[cite: 1].</li>
+                <li><strong>1:30 - 2:00</strong>: Implement <strong>Keep-it-Going Loop</strong> logic (Step 11/12), apply Neubrutalist styling refinements, test layout responsiveness[cite: 1].</li>
+            </ol>
+        </body>
+        </html>
+        `;
+
+        // Automatically trigger document download
+        const blob = new Blob(['\ufeff', prdHtmlContent], {
+            type: 'application/msword'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.getElementById('download-link');
+        a.href = url;
+        a.download = 'Spontrip_PRD.docx';
+        
+        // Trigger click automatically
+        window.onload = () => {
+            a.click();
+        };
+    </script>
+</body>
+</html>

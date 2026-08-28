@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Spontrip - Travel Radius</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "neon-cyan": "#00FFFF",
+                        "surface-variant": "#e2e2e2",
+                        "surface-dim": "#dadada",
+                        "slate-muted": "#1F2937",
+                        "secondary-container": "#9d05ff",
+                        "secondary-fixed-dim": "#dfb7ff",
+                        "success-green": "#22C55E",
+                        "secondary": "#7b00ca",
+                        "tertiary-container": "#dfe5fb",
+                        "inverse-surface": "#2f3131",
+                        "inverse-primary": "#00dddd",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f9f9f9",
+                        "outline-variant": "#b9cac9",
+                        "slate-dark": "#111827",
+                        "tertiary": "#575e70",
+                        "electric-purple": "#9D00FF",
+                        "on-tertiary-fixed": "#141b2b",
+                        "on-secondary-fixed-variant": "#6b00b0",
+                        "surface-bright": "#f9f9f9",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f0f1f1",
+                        "primary-fixed-dim": "#00dddd",
+                        "tertiary-fixed-dim": "#c0c6db",
+                        "surface-container-high": "#e8e8e8",
+                        "on-surface-variant": "#3a4a49",
+                        "on-primary-fixed-variant": "#004f4f",
+                        "surface-container": "#eeeeee",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#2d004f",
+                        "primary-container": "#00ffff",
+                        "on-background": "#1a1c1c",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-tertiary-container": "#5f6678",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#002020",
+                        "on-surface": "#1a1c1c",
+                        "outline": "#6a7a7a",
+                        "on-secondary-container": "#f7e6ff",
+                        "primary-fixed": "#00fbfb",
+                        "on-primary-container": "#007272",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#f1daff",
+                        "tertiary-fixed": "#dce2f7",
+                        "on-tertiary-fixed-variant": "#404758",
+                        "surface-container-low": "#f3f3f4",
+                        "surface-tint": "#006a6a",
+                        "on-secondary": "#ffffff",
+                        "border-black": "#000000",
+                        "surface": "#f9f9f9",
+                        "on-primary": "#ffffff",
+                        "primary": "#006a6a",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-lg": "64px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "margin-md": "32px",
+                        "margin-sm": "16px",
+                        "card-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-bold": ["JetBrains Mono"],
+                        "headline-xl": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-bold": ["14px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "headline-xl": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "label-sm": ["12px", { "lineHeight": "1.0", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom styles for brutalist range slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: #00FFFF; /* neon-cyan */
+            border: 2px solid #000000;
+            cursor: pointer;
+            margin-top: -10px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+            transition: all 0.1s ease;
+        }
+
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+            background: #9D00FF; /* electric-purple */
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #000000;
+            border-radius: 0;
+        }
+        
+        /* Suppress specific nav elements for focused flow */
+        .desktop-nav-shell { display: none !important; }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-lg">
+<!-- TopAppBar -->
+<header class="bg-white dark:bg-slate-dark w-full top-0 sticky border-b-2 border-black dark:border-white transition-all duration-200 z-40">
+<div class="flex justify-between items-center px-margin-sm h-16 w-full">
+<button class="text-on-surface-variant hover:bg-surface-container p-2 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-black text-on-surface dark:text-inverse-on-surface">Spontrip</h1>
+<div class="font-label-bold text-label-bold text-on-surface-variant">
+                Step 5 of 8
+            </div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-32">
+<!-- Sequential Card Workflow Container -->
+<div class="w-full max-w-[600px] bg-surface-container-lowest border-2 border-black p-margin-md relative group">
+<!-- Brutalist offset shadow (simulated) -->
+<div class="absolute inset-0 bg-neon-cyan translate-x-[4px] translate-y-[4px] -z-10 border-2 border-black hidden md:block"></div>
+<!-- Step Label -->
+<div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-white border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">
+                Step 6
+            </div>
+<!-- Content -->
+<div class="flex flex-col gap-margin-md mt-4">
+<div class="text-center">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-black mb-unit">How far are you willing to travel?</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Set your maximum exploration radius.</p>
+</div>
+<!-- Interactive Slider Area -->
+<div class="flex flex-col gap-gutter bg-surface p-gutter border-2 border-black relative">
+<div class="flex justify-between items-end mb-unit">
+<span class="font-label-bold text-label-bold text-on-surface-variant">Distance</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-headline-xl font-black text-neon-cyan drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]" id="radius-value">25</span>
+<span class="font-label-bold text-label-bold">km</span>
+</div>
+</div>
+<div class="relative pt-4 pb-2">
+<input class="w-full" id="radius-slider" max="50" min="0.5" step="0.5" type="range" value="25"/>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-unit">
+<span>0.5 km (Local)</span>
+<span>50 km (Adventure)</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile & Focused Flow) -->
+<nav class="bg-white dark:bg-slate-dark fixed bottom-0 w-full z-50 border-t-2 border-black dark:border-white">
+<div class="flex justify-between items-center p-gutter gap-gutter w-full max-w-[800px] mx-auto">
+<!-- Back Button (Inactive styling based on JSON logic, though strictly not 'navigation' tabs, following the button style paradigm) -->
+<button class="flex items-center gap-2 px-4 py-3 bg-white text-on-surface border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-electric-purple hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(157,0,255,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100 font-label-bold text-label-bold flex-1 justify-center">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+                Back
+            </button>
+<!-- Next Button (Active styling based on flow priority) -->
+<button class="flex items-center gap-2 px-4 py-3 bg-neon-cyan text-on-primary-container border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-electric-purple hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(157,0,255,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100 font-label-bold text-label-bold flex-1 justify-center">
+                Next
+                <span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</nav>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slider = document.getElementById('radius-slider');
+            const valueDisplay = document.getElementById('radius-value');
+
+            slider.addEventListener('input', (e) => {
+                // Ensure nice formatting for smaller numbers
+                let val = parseFloat(e.target.value);
+                valueDisplay.textContent = val >= 1 ? Math.round(val) : val;
+            });
+        });
+    </script>
+</body></html>

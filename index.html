@@ -1,0 +1,336 @@
+<!doctype html>
+<html class="light" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spontrip</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "neon-cyan": "#00FFFF",
+              "electric-purple": "#9D00FF",
+              "border-black": "#000000",
+              "slate-dark": "#111827",
+              "slate-muted": "#1F2937",
+              background: "#f9f9f9",
+              surface: "#f9f9f9",
+              "surface-container": "#eeeeee",
+              "surface-container-low": "#f3f3f4",
+              "surface-container-lowest": "#ffffff",
+              "on-surface": "#1a1c1c",
+              "on-surface-variant": "#3a4a49",
+              "on-background": "#1a1c1c",
+              "on-primary-container": "#007272",
+              outline: "#6a7a7a",
+              "outline-variant": "#b9cac9",
+            },
+            spacing: {
+              gutter: "16px",
+              unit: "4px",
+              "margin-sm": "16px",
+              "margin-md": "32px",
+              "margin-lg": "64px",
+              "card-gap": "24px",
+            },
+            fontFamily: {
+              "headline-xl": ["Inter"],
+              "headline-lg": ["Inter"],
+              "headline-lg-mobile": ["Inter"],
+              "headline-md": ["Inter"],
+              "body-lg": ["Inter"],
+              "body-md": ["Inter"],
+              "label-bold": ["JetBrains Mono"],
+              "label-sm": ["JetBrains Mono"],
+            },
+            fontSize: {
+              "headline-xl": ["48px", { lineHeight: "1.1", letterSpacing: "-0.04em", fontWeight: "800" }],
+              "headline-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "800" }],
+              "headline-lg-mobile": ["28px", { lineHeight: "1.2", fontWeight: "800" }],
+              "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "700" }],
+              "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
+              "body-md": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+              "label-bold": ["14px", { lineHeight: "1.0", fontWeight: "700" }],
+              "label-sm": ["12px", { lineHeight: "1.0", fontWeight: "500" }],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-background text-on-background min-h-[100dvh] flex flex-col font-body-md antialiased">
+    <div class="noise-bg"></div>
+
+    <header id="chrome" class="hidden sticky top-0 z-50 bg-white border-b-2 border-black h-16">
+      <div class="flex justify-between items-center px-margin-sm h-16 w-full max-w-7xl mx-auto">
+        <button id="header-back" class="flex items-center justify-center p-2 hover:bg-surface-container" type="button" aria-label="Back">
+          <span class="material-symbols-outlined text-on-surface-variant">arrow_back</span>
+        </button>
+        <div class="font-headline-md text-headline-md font-black text-on-surface">Spontrip</div>
+        <div id="progress-label" class="font-label-bold text-label-bold text-on-surface-variant">Step 1 of 8</div>
+      </div>
+    </header>
+
+    <main class="flex-grow flex flex-col">
+      <section id="screen-start" class="screen relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 z-0 opacity-10 pointer-events-none dot-grid"></div>
+        <div class="absolute top-10 left-10 w-24 h-24 border-2 border-black rounded-full opacity-20 pointer-events-none"></div>
+        <div class="absolute bottom-10 right-10 w-32 h-32 border-2 border-black rotate-45 opacity-20 pointer-events-none"></div>
+        <div class="z-10 w-full max-w-lg px-gutter flex flex-col items-center text-center">
+          <div class="mb-margin-md bg-neon-cyan p-6 inline-block border-2 border-black -rotate-3">
+            <span class="material-symbols-outlined text-6xl text-border-black" style="font-variation-settings: 'FILL' 1">flight_takeoff</span>
+          </div>
+          <h1 class="font-headline-xl text-headline-xl text-border-black mb-unit uppercase tracking-tighter">SPONTRIP</h1>
+          <p class="font-body-lg text-body-lg text-slate-muted mb-margin-lg max-w-xs mx-auto">Turn indecision into instant plans.</p>
+          <button id="start-btn" class="bg-neon-cyan text-on-surface font-label-bold text-label-bold py-4 px-12 uppercase w-full max-w-sm flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-none active:translate-x-1 active:translate-y-1" type="button">
+            Start Sponty Trip
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="screen-intent" class="screen flex-grow flex items-center justify-center p-gutter md:p-margin-md pb-28">
+        <div class="bg-white border-2 border-black w-full max-w-2xl mx-auto p-margin-md md:p-margin-lg relative">
+          <span class="absolute top-4 left-4 font-label-bold text-label-bold bg-black text-white px-2 py-1">Step 1</span>
+          <div class="mt-8">
+            <p id="baseline-note" class="hidden font-label-sm text-label-sm text-electric-purple uppercase tracking-wider mb-margin-sm"></p>
+            <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-margin-sm">What do you want to do?</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant mb-margin-md">Enter a custom idea or pick from our quick suggestions.</p>
+            <input id="intent-input" class="w-full bg-white border border-black p-4 font-body-lg text-body-lg outline-none focus:border-neon-cyan focus:border-2 mb-margin-lg" placeholder="e.g. Find a quiet cafe to read..." type="text" />
+            <h3 class="font-label-bold text-label-bold text-slate-muted mb-3">Quick Ideas</h3>
+            <div class="flex flex-wrap gap-3">
+              <button type="button" data-intent="Eat something" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Eat something</button>
+              <button type="button" data-intent="Go somewhere" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Go somewhere</button>
+              <button type="button" data-intent="Hang out" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Hang out</button>
+              <button type="button" data-intent="Be active" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Be active</button>
+              <button type="button" data-intent="Learn something new" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Learn something new</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-group" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-lg pb-28">
+        <div class="bg-white border-2 border-black p-margin-md w-full max-w-2xl shadow-[4px_4px_0_#000]">
+          <div class="font-label-bold text-label-bold mb-margin-sm text-slate-muted">GROUP SIZE</div>
+          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-margin-md">How many will be going?</h2>
+          <div class="flex flex-col gap-gutter">
+            <button type="button" data-group="1" class="w-full py-4 px-6 flex items-center gap-gutter border border-black bg-white hover:bg-surface-container text-left">
+              <span class="material-symbols-outlined text-2xl">person</span>
+              <span class="font-body-lg text-body-lg">Solo</span>
+            </button>
+            <button type="button" data-group="2-4" class="w-full py-4 px-6 flex items-center gap-gutter border border-black bg-white hover:bg-surface-container text-left">
+              <span class="material-symbols-outlined text-2xl">group</span>
+              <span class="font-body-lg text-body-lg">2-4 Friends</span>
+            </button>
+            <button type="button" data-group="5+" class="w-full py-4 px-6 flex items-center gap-gutter border border-black bg-white hover:bg-surface-container text-left">
+              <span class="material-symbols-outlined text-2xl">groups</span>
+              <span class="font-body-lg text-body-lg">5+ Squad</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-theme" class="screen flex-grow flex flex-col items-center justify-center p-gutter pb-28">
+        <div class="w-full max-w-4xl">
+          <div class="mb-margin-md text-center">
+            <h2 class="font-headline-lg text-headline-lg md:font-headline-xl md:text-headline-xl mb-unit">What's the vibe?</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant">Select a theme for your spontaneous adventure.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-card-gap">
+            <button type="button" data-theme="food" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
+              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">restaurant</span>
+              <span class="font-headline-md text-headline-md font-bold">Food &amp; Eats</span>
+            </button>
+            <button type="button" data-theme="trips" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
+              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">directions_car</span>
+              <span class="font-headline-md text-headline-md font-bold">Short Trips</span>
+            </button>
+            <button type="button" data-theme="travel" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
+              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">flight</span>
+              <span class="font-headline-md text-headline-md font-bold">Off Country</span>
+            </button>
+            <button type="button" data-theme="entertainment" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
+              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">sports_esports</span>
+              <span class="font-headline-md text-headline-md font-bold">Entertainment</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-map" class="screen flex-grow flex flex-col items-center px-gutter py-margin-md pb-28">
+        <div class="w-full max-w-4xl bg-white border-2 border-black p-gutter flex flex-col gap-gutter shadow-[8px_8px_0_#000]">
+          <span class="font-label-bold text-label-bold bg-black text-white px-2 py-1 inline-block self-start uppercase tracking-widest">Step 4</span>
+          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg">Pick your anchor location</h2>
+          <p class="font-body-lg text-body-lg text-on-surface-variant">Tap the map to drop a pin. We'll build your spontaneous itinerary around this spot.</p>
+          <button id="geo-btn" class="self-start bg-white border-2 border-black px-4 py-2 font-label-bold text-label-bold shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white" type="button">Use my location</button>
+          <div id="map-slot" class="w-full aspect-square md:aspect-video border-2 border-black overflow-hidden bg-surface-container cursor-crosshair"></div>
+          <div class="border-t-2 border-black pt-gutter flex flex-col gap-unit">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Selected Anchor</span>
+            <div class="flex items-center gap-gutter bg-surface-container-low p-3 border border-black border-dashed">
+              <span class="material-symbols-outlined text-electric-purple">map</span>
+              <span id="location-label" class="font-body-md text-body-md font-bold">No pin yet. Tap the map.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-radius" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-28">
+        <div class="w-full max-w-[600px] bg-white border-2 border-black p-margin-md relative">
+          <div class="absolute inset-0 bg-neon-cyan translate-x-1 translate-y-1 -z-10 border-2 border-black hidden md:block"></div>
+          <div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-white border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">Step 5</div>
+          <div class="flex flex-col gap-margin-md mt-4">
+            <div class="text-center">
+              <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black mb-unit">How far are you willing to travel?</h2>
+              <p class="font-body-md text-body-md text-on-surface-variant">Set your maximum exploration radius.</p>
+            </div>
+            <div class="flex flex-col gap-gutter bg-surface p-gutter border-2 border-black">
+              <div class="flex justify-between items-end">
+                <span class="font-label-bold text-label-bold text-on-surface-variant">Distance</span>
+                <div class="flex items-baseline gap-1">
+                  <span id="radius-value" class="font-headline-xl text-headline-xl font-black text-neon-cyan drop-shadow-[2px_2px_0_#000]">8</span>
+                  <span class="font-label-bold text-label-bold">km</span>
+                </div>
+              </div>
+              <input id="radius-input" type="range" min="0.5" max="80" step="0.5" value="8" />
+              <div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant">
+                <span>0.5 km (Local)</span>
+                <span>80 km (Adventure)</span>
+              </div>
+              <p id="radius-location" class="font-label-sm text-label-sm text-on-surface-variant">No pin yet</p>
+            </div>
+            <div id="radius-map-slot" class="w-full h-56 border-2 border-black overflow-hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-budget" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:px-margin-lg pb-28">
+        <div class="w-full max-w-2xl">
+          <div class="mb-margin-md text-center">
+            <span class="font-label-bold text-label-bold text-electric-purple uppercase tracking-widest mb-2 block">Step 6</span>
+            <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black">How much are you willing to spend?</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-2">Select a budget tier for your spontaneous getaway.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-card-gap">
+            <button type="button" data-budget="budget" class="bg-white border-2 border-black p-6 flex flex-col items-center text-center hover:bg-surface-container">
+              <span class="material-symbols-outlined text-4xl mb-4">wallet</span>
+              <h3 class="font-headline-md text-headline-md mb-2">Budget</h3>
+              <p class="font-body-md text-on-surface-variant">Keep it lean.</p>
+            </button>
+            <button type="button" data-budget="moderate" class="bg-white border-2 border-black p-6 flex flex-col items-center text-center hover:bg-surface-container">
+              <span class="material-symbols-outlined text-4xl mb-4">payments</span>
+              <h3 class="font-headline-md text-headline-md mb-2">Moderate</h3>
+              <p class="font-body-md text-on-surface-variant">Comfortable.</p>
+            </button>
+            <button type="button" data-budget="splurge" class="bg-white border-2 border-black p-6 flex flex-col items-center text-center hover:bg-surface-container">
+              <span class="material-symbols-outlined text-4xl mb-4">diamond</span>
+              <h3 class="font-headline-md text-headline-md mb-2">Splurge</h3>
+              <p class="font-body-md text-on-surface-variant">Treat yourself.</p>
+            </button>
+          </div>
+          <label class="block mt-margin-md font-label-sm text-label-sm text-on-surface-variant">
+            Or max pesos per person
+            <input id="budget-max" class="mt-2 w-full bg-white border border-black p-3 font-body-md outline-none focus:border-neon-cyan" type="number" min="0" step="50" placeholder="e.g. 800" />
+          </label>
+        </div>
+      </section>
+
+      <section id="screen-transit" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-28">
+        <div class="w-full max-w-3xl flex flex-col gap-margin-md">
+          <div class="text-center">
+            <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-unit">Walking or Vehicle?</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant">Select your preferred mode of transit for this trip.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-card-gap">
+            <button type="button" data-transit="walk" class="bg-white border-2 border-black p-margin-md flex flex-col items-center justify-center gap-4 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
+              <span class="material-symbols-outlined text-[64px] leading-none">directions_walk</span>
+              <span class="font-headline-md text-headline-md">Walking</span>
+            </button>
+            <button type="button" data-transit="vehicle" class="bg-white border-2 border-black p-margin-md flex flex-col items-center justify-center gap-4 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
+              <span class="material-symbols-outlined text-[64px] leading-none">directions_car</span>
+              <span class="font-headline-md text-headline-md">Vehicle</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-result" class="screen flex-grow flex flex-col items-center justify-center p-gutter pb-12">
+        <p id="result-note" class="font-label-sm text-label-sm text-electric-purple uppercase tracking-wider mb-4 text-center"></p>
+        <div id="result-card" class="bg-white border-2 border-black p-gutter w-full max-w-2xl flex flex-col gap-unit shadow-[8px_8px_0_#000]"></div>
+      </section>
+
+      <section id="screen-loop" class="screen flex-grow flex items-center justify-center p-gutter md:p-margin-lg">
+        <div class="w-full max-w-2xl bg-white border-2 border-black shadow-[12px_12px_0_#000] p-margin-md md:p-margin-lg flex flex-col gap-margin-md">
+          <div class="inline-block self-start border-2 border-black bg-surface-container px-3 py-1 font-label-sm text-label-sm uppercase tracking-wider">Loop Decision</div>
+          <h2 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl uppercase tracking-tighter">Do you want to keep the sponty trip going?</h2>
+          <div id="loop-itinerary"></div>
+          <div class="flex flex-col gap-gutter">
+            <button id="keep-yes" class="w-full bg-neon-cyan border-2 border-black shadow-[6px_6px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-white" type="button">
+              <span class="material-symbols-outlined">add_circle</span>
+              YES! Add another activity
+            </button>
+            <button id="keep-no" class="w-full bg-white border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-surface-container" type="button">
+              <span class="material-symbols-outlined">close</span>
+              NO - End Trip
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-thanks" class="screen flex-grow flex flex-col items-center justify-center p-gutter text-center gap-margin-md">
+        <div class="w-full max-w-3xl aspect-[21/9] max-h-64 border-4 border-black shadow-[16px_16px_0_#00FFFF] overflow-hidden bg-electric-purple flex items-center justify-center">
+          <span class="material-symbols-outlined text-[8rem] text-white" style="font-variation-settings: 'FILL' 1">celebration</span>
+        </div>
+        <h2 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl max-w-2xl bg-white border-2 border-black p-gutter shadow-[8px_8px_0_#9D00FF]">
+          Thank you for using Spontrip, enjoy your sponty trip!
+        </h2>
+        <div id="final-itinerary" class="w-full max-w-xl text-left"></div>
+        <button id="restart-btn" class="bg-white border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-3 px-8 hover:bg-surface-container" type="button">
+          Start Over
+        </button>
+      </section>
+
+      <div id="map-panel" class="hidden">
+        <div id="map"></div>
+      </div>
+    </main>
+
+    <footer id="footer" class="hidden fixed bottom-0 w-full z-50 bg-white border-t-2 border-black">
+      <div class="flex justify-between items-center p-gutter gap-gutter max-w-7xl mx-auto">
+        <button id="back-btn" class="flex items-center gap-2 px-4 py-3 bg-white border-2 border-black shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white font-label-bold text-label-bold flex-1 justify-center" type="button">
+          <span class="material-symbols-outlined">chevron_left</span>
+          Back
+        </button>
+        <button id="next-btn" class="flex items-center gap-2 px-4 py-3 bg-neon-cyan text-on-primary-container border-2 border-black shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white font-label-bold text-label-bold flex-1 justify-center" type="button">
+          <span id="next-label">Next</span>
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>
