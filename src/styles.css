@@ -167,7 +167,7 @@ main {
   border: 2px solid #000;
   background: #fff;
   box-shadow: 4px 4px 0 #000;
-  max-height: min(28vh, 240px);
+  max-height: min(50vh, 420px);
   overflow-y: auto;
 }
 
@@ -284,14 +284,35 @@ main {
   min-height: 160px;
 }
 
+#result-note:empty {
+  display: none;
+  margin: 0;
+}
+
+#result-card {
+  gap: 20px;
+  padding: 20px 20px 28px;
+}
+
+#result-copy > div {
+  gap: 6px;
+  margin-top: 0;
+}
+
+#result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .result-map-wrap {
   position: relative;
-  margin: 12px 0 4px;
+  margin: 0;
 }
 
 #result-map-slot {
-  height: min(38vh, 300px);
-  min-height: 200px;
+  height: min(22vh, 200px);
+  min-height: 150px;
   width: 100%;
   border: 2px solid #000;
   overflow: hidden;
@@ -322,13 +343,22 @@ main {
 }
 
 .result-map-caption {
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #3a4a49;
+}
+
+#spin-again {
+  margin: 0;
+  padding-block: 12px;
+}
+
+#to-loop {
+  margin: 0;
 }
 
 .leaflet-container {

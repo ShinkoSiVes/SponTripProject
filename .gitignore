@@ -8,3 +8,5 @@ dist
 installer.html
 .vercel
 .~lock.*
+.env*
+!.env.example

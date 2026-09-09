@@ -26,7 +26,7 @@ Matching prefers live nearby places for the selected vibe (**Google → Foursqua
 - Overpass API fallback if no Places key is set
 - Nominatim for location search and reverse geocoding
 - Tailwind via CDN
-- LocalStorage for session restore (`spontrip-state-v1`)
+- A refresh starts a new trip (saved session is cleared)
 - Curated backup catalog in `src/places.js` if live APIs fail
 
 ## Run locally
@@ -104,7 +104,7 @@ Do not commit `.env`. `.env.example` is the template.
 index.html          # screens
 .env.example        # API key template
 src/app.js          # wizard, loop, match flow
-src/state.js        # state + LocalStorage
+src/state.js        # funnel state
 src/groups.js       # Step 2 copy that follows the vibe
 src/places.js       # curated backup places
 src/match.js        # distance + budget + ranking

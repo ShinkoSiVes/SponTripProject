@@ -2,15 +2,15 @@ import "./styles.css";
 import {
   STEPS,
   INPUT_STEPS,
-  loadState,
   saveState,
+  clearState,
   emptyState,
   baselineForNextActivity,
   searchRadiusKm,
 } from "./state.js";
 import { findMatch, distanceKm } from "./match.js";
 import { intentKeywords } from "./intent.js";
-import { fetchLandmarks, loadCatalog } from "./landmarks.js";
+import { fetchLandmarks, loadCatalog, peekCachedLandmarks } from "./landmarks.js";
 import { PLACES } from "./places.js";
 import { reverseLabel, searchLocations } from "./geocode.js";
 import { initMap, setPin, updateCircle, refreshMapSize, setLandmarks, clearLandmarks, focusPlaces } from "./map.js";
@@ -24,12 +24,49 @@ function nearbyProviderLabel() {
   return "OpenStreetMap";
 }
 
-let state = loadState();
+function hasPlacesApiKey() {
+  return hasGooglePlaces() || hasFoursquarePlaces();
+}
+
+clearState();
+let state = emptyState();
 
 let landmarkToken = 0;
 let landmarkTimer = null;
 let searchTimer = null;
 let searchToken = 0;
+let lastNearbyPlaces = [];
+let previousMatchId = null;
+let resumeMatchAfterRadius = false;
+let resumeMatchAfterLocation = false;
+const skippedPlaceIds = new Set();
+const skippedPlaceNames = new Set();
+
+function skipName(place) {
+  return String(place?.name || "").trim().toLowerCase();
+}
+
+function rememberSkip(place) {
+  if (place?.id) skippedPlaceIds.add(place.id);
+  const name = skipName(place);
+  if (name) skippedPlaceNames.add(name);
+}
+
+function isSkipped(place) {
+  if (!place) return true;
+  if (place.id && skippedPlaceIds.has(place.id)) return true;
+  const name = skipName(place);
+  return Boolean(name && skippedPlaceNames.has(name));
+}
+
+function clearSkipped() {
+  skippedPlaceIds.clear();
+  skippedPlaceNames.clear();
+}
+
+function matchExclude() {
+  return { ids: [...skippedPlaceIds], names: [...skippedPlaceNames] };
+}
 
 function updateLandmarkStatus(text) {
   const mapStatus = $("landmark-status");
@@ -40,6 +77,7 @@ function updateLandmarkStatus(text) {
 
 async function refreshLandmarks() {
   if (!state.coords || !state.theme) {
+    lastNearbyPlaces = [];
     clearLandmarks();
     renderNearbyList([]);
     updateLandmarkStatus("");
@@ -67,9 +105,11 @@ async function refreshLandmarks() {
           if (d) return d;
         }
         return a.distanceKm - b.distanceKm;
-      });
+      })
+      .filter((place) => !isSkipped(place));
+    lastNearbyPlaces = ranked;
     try {
-      setLandmarks(ranked.slice(0, 24), state.match?.id);
+      setLandmarks(ranked, state.match?.id);
     } catch {
       // Dots are optional; the list below the map still shows.
     }
@@ -89,6 +129,7 @@ async function refreshLandmarks() {
     );
   } catch (err) {
     if (token !== landmarkToken) return;
+    lastNearbyPlaces = [];
     clearLandmarks();
     renderNearbyList([]);
     const msg = String(err?.message || "");
@@ -108,11 +149,10 @@ function renderNearbyList(places) {
     box.classList.add("hidden");
     return;
   }
-  const top = places.slice(0, 6);
   box.innerHTML = `
     <div class="nearby-list-head">Nearby for your vibe</div>
     <ul class="nearby-list-items">
-      ${top
+      ${places
         .map((place) => {
           const rating =
             place.rating != null && Number.isFinite(place.rating)
@@ -140,7 +180,7 @@ function renderNearbyList(places) {
   box.classList.remove("hidden");
   box.querySelectorAll("[data-nearby-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const place = top.find((p) => p.id === btn.dataset.nearbyId);
+      const place = places.find((p) => p.id === btn.dataset.nearbyId);
       if (!place) return;
       setPin({ lat: place.lat, lng: place.lng }, searchRadiusKm(state));
       setLandmarks(places, place.id);
@@ -206,13 +246,23 @@ function pickTheme(theme) {
     slidingTheme = null;
     themeSlideIndex = 0;
     stopThemeSlider();
-    setState({ theme: null });
+    lastNearbyPlaces = [];
+    previousMatchId = null;
+    resumeMatchAfterRadius = false;
+    resumeMatchAfterLocation = false;
+    clearSkipped();
+    setState({ theme: null, match: null, matchMeta: null });
     return;
   }
   slidingTheme = null;
   themeSlideIndex = 0;
   const groupSize = groupFitsTheme(state.groupSize, theme) ? state.groupSize : null;
-  setState({ theme, groupSize });
+  lastNearbyPlaces = [];
+  previousMatchId = null;
+  resumeMatchAfterRadius = false;
+  resumeMatchAfterLocation = false;
+  clearSkipped();
+  setState({ theme, groupSize, match: null, matchMeta: null });
 }
 
 const $ = (id) => document.getElementById(id);
@@ -282,6 +332,16 @@ function prevInputStep(fromStep) {
 function next() {
   if (state.step === STEPS.START) return go(STEPS.INTENT);
   if (state.step === STEPS.BUDGET) return runMatch();
+  if (state.step === STEPS.RADIUS && resumeMatchAfterRadius) {
+    resumeMatchAfterRadius = false;
+    lastNearbyPlaces = [];
+    return runMatch();
+  }
+  if (state.step === STEPS.MAP && resumeMatchAfterLocation) {
+    resumeMatchAfterLocation = false;
+    lastNearbyPlaces = [];
+    return runMatch();
+  }
   const following = nextInputStep(state.step);
   if (following) return go(following);
   if (INPUT_STEPS.includes(state.step)) return runMatch();
@@ -292,10 +352,44 @@ function back() {
     if (state.loopCount > 0) return;
     return go(STEPS.START);
   }
-  if (state.step === STEPS.RESULT) return go(STEPS.BUDGET);
+  if (state.step === STEPS.RESULT) {
+    previousMatchId = state.match?.id || previousMatchId;
+    return setState({ step: STEPS.BUDGET, match: null, matchMeta: null });
+  }
   if (state.step === STEPS.LOOP) return go(STEPS.RESULT);
+  if (state.step === STEPS.RADIUS && resumeMatchAfterRadius) {
+    resumeMatchAfterRadius = false;
+    return showSkipExhausted();
+  }
+  if (state.step === STEPS.MAP && resumeMatchAfterLocation) {
+    resumeMatchAfterLocation = false;
+    return showSkipExhausted();
+  }
   const previous = prevInputStep(state.step);
   if (previous) go(previous);
+}
+
+function preferFreshMatch(result) {
+  if (!result?.place || !previousMatchId || result.place.id !== previousMatchId) return result;
+  const nextPlace = result.alternatives?.[0];
+  if (!nextPlace) return result;
+  return {
+    ...result,
+    place: nextPlace,
+    alternatives: [...result.alternatives.slice(1), result.place],
+  };
+}
+
+function placesForMatch() {
+  const seen = new Set();
+  const merged = [];
+  for (const place of [...lastNearbyPlaces, ...peekCachedLandmarks(state)]) {
+    const key = place.id || String(place.name || "").toLowerCase();
+    if (!key || seen.has(key) || isSkipped(place)) continue;
+    seen.add(key);
+    merged.push(place);
+  }
+  return merged;
 }
 
 async function runMatch() {
@@ -313,6 +407,7 @@ async function runMatch() {
       // Map is often hidden on the result screen; never block the match.
     }
     const { statePatch = {}, autoWidenedTo } = extra;
+    if (result.place?.id) previousMatchId = result.place.id;
     setState({
       step: STEPS.RESULT,
       match: result.place,
@@ -326,23 +421,35 @@ async function runMatch() {
   };
 
   try {
-    const catalog = await Promise.race([
-      loadCatalog(state),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("match deadline")), 12000)),
-    ]);
+    let catalog = placesForMatch();
+    if (!catalog.length) {
+      catalog = await loadCatalog(state);
+    }
 
-    let result = findMatch(state, catalog);
+    let result = preferFreshMatch(findMatch(state, catalog, matchExclude()));
     if (result.place) {
       finish(result, catalog);
       return;
     }
 
+    if (!lastNearbyPlaces.length) {
+      catalog = await loadCatalog(state);
+      result = preferFreshMatch(findMatch(state, catalog, matchExclude()));
+      if (result.place) {
+        finish(result, catalog);
+        return;
+      }
+    }
+
     // Soft local widen before showing empty (no extra API spam).
-    if (catalog.length) {
+    // If the user already skipped every remaining spot, let them choose
+    // to widen the radius or pick a new pin instead of auto-jumping.
+    const stillOpen = catalog.some((place) => !isSkipped(place));
+    if (stillOpen) {
       let radiusKm = Number(state.radiusKm) || 8;
       for (let i = 0; i < 20 && radiusKm < 80; i += 1) {
         radiusKm = Math.min(80, radiusKm + 1);
-        result = findMatch({ ...state, radiusKm }, catalog);
+        result = preferFreshMatch(findMatch({ ...state, radiusKm }, catalog, matchExclude()));
         if (result.place) {
           finish(result, catalog, {
             autoWidenedTo: radiusKm,
@@ -353,18 +460,11 @@ async function runMatch() {
       }
     }
 
-    finish({ place: null, fallback: "empty", alternatives: [] }, catalog);
+    finish({ place: null, fallback: skippedPlaceIds.size ? "skipped" : "empty", alternatives: [] }, catalog);
   } catch {
-    try {
-      const result = findMatch(state, PLACES);
-      finish(result, []);
-    } catch {
-      setState({
-        step: STEPS.RESULT,
-        match: null,
-        matchMeta: { fallback: "empty", alternatives: [] },
-      });
-    }
+    const catalog = placesForMatch();
+    const result = preferFreshMatch(findMatch(state, catalog.length ? catalog : PLACES, matchExclude()));
+    finish(result, catalog);
   }
 }
 
@@ -387,12 +487,20 @@ function finishTrip() {
 }
 
 function resetAll() {
+  lastNearbyPlaces = [];
+  previousMatchId = null;
+  resumeMatchAfterRadius = false;
+  resumeMatchAfterLocation = false;
+  clearSkipped();
   state = emptyState();
   persist();
   render();
 }
 
 async function onMapSelect(coords, knownLabel) {
+  lastNearbyPlaces = [];
+  previousMatchId = null;
+  clearSkipped();
   state = {
     ...state,
     coords,
@@ -495,6 +603,10 @@ function fallbackCopy(kind) {
   if (kind === "widened") return "Nothing sat inside your radius. Closest same-theme stop nearby:";
   if (kind === "any-nearby") return "Nothing matched every filter. Nearby option instead:";
   if (kind === "budget-flex") return "Closest fit was one step above your budget pick:";
+  if (kind === "empty" && !hasPlacesApiKey()) {
+    return "No API key is set. Live nearby search is off.";
+  }
+  if (kind === "skipped") return "You skipped every nearby option.";
   if (kind === "empty") return "Nothing is inside that radius. Go back and widen it.";
   if (kind === "no-pin") return "Drop a pin first so we can match a place.";
   return "";
@@ -503,7 +615,13 @@ function fallbackCopy(kind) {
 function bindOnce() {
   $("start-btn").addEventListener("click", () => go(STEPS.INTENT));
   $("intent-input").addEventListener("input", (e) => {
-    state.intent = e.target.value;
+    const intent = e.target.value;
+    if (intent !== state.intent) {
+      lastNearbyPlaces = [];
+      previousMatchId = null;
+      clearSkipped();
+    }
+    state.intent = intent;
     persist();
     $("next-btn").disabled = !canAdvance();
   });
@@ -511,7 +629,7 @@ function bindOnce() {
     const btn = e.target.closest("[data-group]");
     if (!btn) return;
     const groupSize = btn.dataset.group === state.groupSize ? null : btn.dataset.group;
-    setState({ groupSize });
+    setState({ groupSize, match: null, matchMeta: null });
   });
   document.querySelectorAll("[data-theme]").forEach((btn) => {
     btn.addEventListener("click", () => pickTheme(btn.dataset.theme));
@@ -542,12 +660,16 @@ function bindOnce() {
     scheduleLandmarkRefresh();
   });
   document.querySelectorAll("[data-budget]").forEach((btn) => {
-    btn.addEventListener("click", () => setState({ budget: btn.dataset.budget, budgetMax: null }));
+    btn.addEventListener("click", () =>
+      setState({ budget: btn.dataset.budget, budgetMax: null, match: null, matchMeta: null })
+    );
   });
   $("budget-max").addEventListener("input", (e) => {
     const value = e.target.value === "" ? null : Number(e.target.value);
     state.budgetMax = value;
     if (value) state.budget = null;
+    state.match = null;
+    state.matchMeta = null;
     persist();
     $("next-btn").disabled = !canAdvance();
   });
@@ -610,18 +732,42 @@ function renderChoices() {
 }
 
 function spinAgain() {
-  const alts = state.matchMeta?.alternatives || [];
-  if (!alts.length) return runMatch();
-  const current = state.match;
+  rememberSkip(state.match);
+  const alts = (state.matchMeta?.alternatives || []).filter((place) => !isSkipped(place));
+  if (!alts.length) return showSkipExhausted();
   const nextPlace = alts[0];
-  const remaining = [...alts.slice(1), current].filter(Boolean);
   setState({
     match: nextPlace,
-    matchMeta: { ...state.matchMeta, alternatives: remaining, fallback: "reroll" },
+    matchMeta: { ...state.matchMeta, alternatives: alts.slice(1), fallback: "reroll" },
+  });
+}
+
+function showSkipExhausted() {
+  setState({
+    step: STEPS.RESULT,
+    match: null,
+    matchMeta: { fallback: "skipped", alternatives: [] },
+  });
+}
+
+function goIncreaseRadius() {
+  resumeMatchAfterLocation = false;
+  resumeMatchAfterRadius = true;
+  lastNearbyPlaces = [];
+  const current = Number(state.radiusKm) || 8;
+  const radiusKm = current >= 80 ? 80 : Math.min(80, Math.round((current + 5) * 2) / 2);
+  setState({
+    step: STEPS.RADIUS,
+    match: null,
+    matchMeta: null,
+    radiusKm,
   });
 }
 
 function pickDifferentLocation() {
+  resumeMatchAfterRadius = false;
+  resumeMatchAfterLocation = true;
+  lastNearbyPlaces = [];
   setState({
     step: STEPS.MAP,
     match: null,
@@ -638,25 +784,58 @@ async function autoWidenAndRematch() {
   if (widenBtn) widenBtn.disabled = true;
   if (locationBtn) locationBtn.disabled = true;
   if (note) note.textContent = "Searching nearby places…";
-  if (status) status.textContent = "Loading Google places…";
+  if (status) {
+    status.textContent = hasPlacesApiKey()
+      ? "Loading Google places…"
+      : "No API key is set. Trying OpenStreetMap…";
+  }
 
   const maxKm = 80;
   const fetchRadius = Math.min(maxKm, Math.max(Number(state.radiusKm) || 8, 20));
+  const trial = { ...state, radiusKm: fetchRadius };
 
   try {
-    const catalog = await Promise.race([
-      loadCatalog({ ...state, radiusKm: fetchRadius }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("widen deadline")), 10000)),
-    ]);
+    const local = placesForMatch();
+    if (local.length) {
+      const localResult = preferFreshMatch(findMatch(trial, local, matchExclude()));
+      if (localResult.place) {
+        const usedKm = Math.max(
+          1,
+          Math.ceil(
+            (localResult.place.distanceKm ||
+              distanceKm(state.coords, localResult.place) ||
+              fetchRadius) * 10
+          ) / 10
+        );
+        if (localResult.place?.id) previousMatchId = localResult.place.id;
+        setState({
+          step: STEPS.RESULT,
+          radiusKm: Math.min(maxKm, usedKm),
+          match: localResult.place,
+          matchMeta: {
+            fallback: localResult.fallback || "widened",
+            alternatives: localResult.alternatives,
+            autoWidenedTo: usedKm,
+          },
+        });
+        return;
+      }
+    }
+
+    const catalog = await loadCatalog({ ...state, radiusKm: fetchRadius });
 
     if (!catalog.length) {
-      if (note) note.textContent = "No live places came back. Try another pin.";
-      if (status) status.textContent = "Nearby search returned 0 places.";
+      if (!hasPlacesApiKey()) {
+        if (note) note.textContent = "No API key is set. Live nearby search is off.";
+        if (status) status.textContent = "Add a Google Places key, or try a different pin.";
+      } else {
+        if (note) note.textContent = "No live places came back. Try another pin.";
+        if (status) status.textContent = "Nearby search returned 0 places.";
+      }
       return;
     }
 
-    const trial = { ...state, radiusKm: fetchRadius };
-    const result = findMatch(trial, catalog);
+    const result = preferFreshMatch(findMatch(trial, catalog, matchExclude()));
     if (!result.place) {
       if (note) note.textContent = "Places loaded, but none could be scored.";
       if (status) status.textContent = `${catalog.length} spots found, none usable.`;
@@ -667,6 +846,7 @@ async function autoWidenAndRematch() {
       1,
       Math.ceil((result.place.distanceKm || distanceKm(state.coords, result.place) || fetchRadius) * 10) / 10
     );
+    if (result.place?.id) previousMatchId = result.place.id;
     setState({
       step: STEPS.RESULT,
       radiusKm: Math.min(maxKm, usedKm),
@@ -697,26 +877,34 @@ function renderResult() {
   if (!copy || !body) return;
 
   if (!place) {
+    const noKey = !hasPlacesApiKey();
     note.textContent = fallbackCopy(state.matchMeta?.fallback);
     if (mapWrap) mapWrap.classList.add("hidden");
     copy.innerHTML = "";
+    const skippedOut = Boolean(skippedPlaceIds.size || skippedPlaceNames.size);
+    const emptyLead = noKey
+      ? `<p class="font-body-md text-center">No API key is set, so live nearby search is off. OpenStreetMap and the backup list could not match a place near this pin.</p>
+        <p class="font-label-sm text-label-sm text-blush-ink text-center uppercase tracking-wider">Add VITE_GOOGLE_MAPS_API_KEY in .env or Vercel, then restart / redeploy.</p>`
+      : skippedOut
+        ? `<p class="font-body-md text-center">You skipped every nearby match. Increase the radius to look farther, or select a different location.</p>`
+      : `<p class="font-body-md text-center">No place could be matched near your pin.</p>`;
     body.innerHTML = `
       <div class="flex flex-col gap-4 items-stretch text-left">
-        <p class="font-body-md text-center">No place could be matched near your pin.</p>
+        ${emptyLead}
         <p id="widen-status" class="font-label-sm text-label-sm text-blush-ink text-center uppercase tracking-wider">
           Current radius: ${Number(state.radiusKm) || 8} km
         </p>
         <button id="widen-radius-btn" class="w-full bg-neon-cyan border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-on-surface" type="button">
           <span class="material-symbols-outlined">zoom_out_map</span>
-          Increase radius automatically
+          ${skippedOut ? "Increase radius" : "Increase radius automatically"}
         </button>
         <button id="pick-location-btn" class="w-full bg-white border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-surface-container" type="button">
           <span class="material-symbols-outlined">edit_location_alt</span>
-          Pick a different location
+          Select different location
         </button>
       </div>
     `;
-    $("widen-radius-btn").onclick = () => autoWidenAndRematch();
+    $("widen-radius-btn").onclick = skippedOut ? goIncreaseRadius : autoWidenAndRematch;
     $("pick-location-btn").onclick = () => pickDifferentLocation();
     return;
   }
@@ -736,7 +924,7 @@ function renderResult() {
   const cost = escapeHtml(place.costLabel || "Check on the spot");
 
   copy.innerHTML = `
-    <div class="flex flex-col gap-2 items-center text-center mt-1">
+    <div class="flex flex-col items-center text-center">
       <span class="material-symbols-outlined text-4xl text-neon-cyan" style="font-variation-settings: 'FILL' 1">celebration</span>
       <p class="font-label-bold text-label-bold text-slate-muted uppercase tracking-widest">Matched you with your perfect event</p>
       <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg">${name}</h2>
@@ -750,7 +938,7 @@ function renderResult() {
     badgeEl.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">${badgeIcon}</span>${badge}`;
   }
   body.innerHTML = `
-    <div class="grid grid-cols-2 gap-4 mb-4 mt-2">
+    <div class="result-stats grid grid-cols-2 gap-4">
       <div class="bg-surface border-2 border-black p-3 flex items-center gap-3 shadow-[4px_4px_0_#000]">
         <div class="bg-black text-white p-2 rounded-full flex items-center justify-center">
           <span class="material-symbols-outlined">near_me</span>
@@ -774,10 +962,10 @@ function renderResult() {
       <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">navigation</span>
       Instant Directions
     </a>
-    <button id="spin-again" class="w-full mt-2 bg-white font-label-bold text-label-bold py-2 underline decoration-2 underline-offset-4" type="button">
+    <button id="spin-again" class="w-full bg-white font-label-bold text-label-bold underline decoration-2 underline-offset-4" type="button">
       Not feeling it? Spin again
     </button>
-    <button id="to-loop" class="w-full mt-4 bg-white border-2 border-black font-label-bold text-label-bold uppercase py-3 shadow-[4px_4px_0_#000]" type="button">
+    <button id="to-loop" class="w-full bg-white border-2 border-black font-label-bold text-label-bold uppercase py-3 shadow-[4px_4px_0_#000]" type="button">
       Continue
     </button>
   `;
@@ -835,6 +1023,15 @@ function render() {
 
   showScreen(stepMap[state.step] || "screen-start");
 
+  if (state.step !== STEPS.RESULT) {
+    const copy = $("result-copy");
+    const body = $("result-body");
+    const note = $("result-note");
+    if (copy) copy.innerHTML = "";
+    if (body) body.innerHTML = "";
+    if (note) note.textContent = "";
+  }
+
   const inFunnel = INPUT_STEPS.includes(state.step);
   const showChrome =
     inFunnel || state.step === STEPS.RESULT || state.step === STEPS.LOOP;
@@ -868,13 +1065,22 @@ function render() {
     $("back-btn").disabled = state.step === STEPS.INTENT && state.loopCount > 0;
     $("header-back").disabled = state.step === STEPS.INTENT && state.loopCount > 0;
     $("next-btn").disabled = !canAdvance();
-    $("next-label").textContent = state.step === STEPS.BUDGET ? "Find match" : "Next";
+    $("next-label").textContent =
+      state.step === STEPS.BUDGET ||
+      (state.step === STEPS.RADIUS && resumeMatchAfterRadius) ||
+      (state.step === STEPS.MAP && resumeMatchAfterLocation)
+        ? "Find match"
+        : "Next";
   }
 
   $("intent-input").value = state.intent;
   $("radius-input").value = String(state.radiusKm);
   $("radius-value").textContent = String(state.radiusKm);
   $("budget-max").value = state.budgetMax ?? "";
+  const budgetApiNote = $("budget-api-note");
+  if (budgetApiNote) {
+    budgetApiNote.classList.toggle("hidden", hasPlacesApiKey());
+  }
   $("location-label").textContent = state.locationLabel || "No pin yet. Tap the map.";
   $("radius-location").textContent = state.locationLabel || "No pin yet";
   $("baseline-note").classList.toggle("hidden", state.loopCount === 0);

@@ -76,10 +76,25 @@ const KIND_LABEL = {
 };
 
 const cache = new Map();
+const inflight = new Map();
 
 function cacheKey(coords, radiusKm, theme, source, intent = "") {
   const detail = intentQuery(intent) || "-";
   return `${source}|${theme}|${coords.lat.toFixed(4)}|${coords.lng.toFixed(4)}|${radiusKm}|${detail}`;
+}
+
+function liveRequestKey(state) {
+  return cacheKey(state.coords, searchRadiusKm(state), state.theme, "live", state.intent);
+}
+
+export function peekCachedLandmarks(state) {
+  if (!state?.coords || !state.theme) return [];
+  const radiusKm = searchRadiusKm(state);
+  for (const source of ["google", "foursquare", "osm"]) {
+    const hit = cache.get(cacheKey(state.coords, radiusKm, state.theme, source, state.intent));
+    if (hit?.length) return hit;
+  }
+  return [];
 }
 
 function prettyKind(kind) {
@@ -209,15 +224,13 @@ async function fetchOverpassLandmarks(state) {
   return places;
 }
 
-export async function fetchLandmarks(state) {
-  if (!state.coords || !state.theme) return [];
-
+async function fetchLandmarksOnce(state) {
   const radiusKm = searchRadiusKm(state);
 
   // Prefer Google Places, then Foursquare, then OSM.
   if (hasGooglePlaces()) {
     const key = cacheKey(state.coords, radiusKm, state.theme, "google", state.intent);
-    if (cache.has(key)) return cache.get(key);
+    if (cache.has(key) && cache.get(key).length) return cache.get(key);
     try {
       const places = await fetchGoogleNearby(state);
       if (places.length) {
@@ -231,7 +244,7 @@ export async function fetchLandmarks(state) {
 
   if (hasFoursquarePlaces()) {
     const key = cacheKey(state.coords, radiusKm, state.theme, "foursquare", state.intent);
-    if (cache.has(key)) return cache.get(key);
+    if (cache.has(key) && cache.get(key).length) return cache.get(key);
     try {
       const places = await fetchFoursquareNearby(state);
       if (places.length) {
@@ -250,12 +263,31 @@ export async function fetchLandmarks(state) {
   }
 }
 
+export async function fetchLandmarks(state) {
+  if (!state.coords || !state.theme) return [];
+
+  const cached = peekCachedLandmarks(state);
+  if (cached.length) return cached;
+
+  const key = liveRequestKey(state);
+  if (inflight.has(key)) return inflight.get(key);
+
+  const pending = fetchLandmarksOnce(state).finally(() => inflight.delete(key));
+  inflight.set(key, pending);
+  return pending;
+}
+
 export async function loadCatalog(state) {
+  const cached = peekCachedLandmarks(state);
+  if (cached.length) return cached;
+
   try {
-    const live = await withTimeout(fetchLandmarks(state), 10000, "catalog timeout");
+    const live = await withTimeout(fetchLandmarks(state), 15000, "catalog timeout");
     if (live.length) return live;
     return nearbyBackup(state);
   } catch {
+    const late = peekCachedLandmarks(state);
+    if (late.length) return late;
     return nearbyBackup(state);
   }
 }

@@ -171,18 +171,12 @@ async function searchNearbyByType(state, includedType, key, meters) {
 }
 
 async function fetchNearbyByTheme(state, key, meters) {
-  const types = THEME_TYPES[state.theme] || THEME_TYPES.food;
-  let lastError;
-  for (const type of types.slice(0, 2)) {
-    try {
-      const places = await searchNearbyByType(state, type, key, meters);
-      if (places.length) return places;
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  if (lastError) throw lastError;
-  return [];
+  const types = (THEME_TYPES[state.theme] || THEME_TYPES.food).slice(0, 2);
+  const lists = await Promise.all(
+    types.map((type) => searchNearbyByType(state, type, key, meters).catch(() => []))
+  );
+  const merged = mergePlaces(...lists);
+  return merged;
 }
 
 export async function fetchGoogleNearby(state) {

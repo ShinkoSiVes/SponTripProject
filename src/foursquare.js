@@ -114,7 +114,7 @@ async function searchQuery(state, query, headers, meters, extraTags = []) {
     radius: String(meters),
     query,
     sort: "DISTANCE",
-    limit: "15",
+    limit: "50",
   });
   const url = `/api/foursquare/places/search?${params}`;
   const data = await requestSearch(url, headers, 7000);

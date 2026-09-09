@@ -291,12 +291,15 @@
             Or max pesos per person
             <input id="budget-max" class="mt-2 w-full bg-white border border-black p-3 font-body-md outline-none focus:border-neon-cyan" type="number" min="0" step="50" placeholder="e.g. 800" />
           </label>
+          <p id="budget-api-note" class="hidden mt-margin-md bg-white border-2 border-black p-3 font-body-md text-on-surface-variant text-center">
+            No API key is set. Live nearby search is off, so Find match may return no place.
+          </p>
         </div>
       </section>
 
       <section id="screen-result" class="screen flex-grow flex flex-col items-center justify-start p-gutter pb-12 overflow-y-auto">
-        <p id="result-note" class="font-label-sm text-label-sm text-blush-ink uppercase tracking-wider mb-4 text-center"></p>
-        <div id="result-card" class="bg-white border-2 border-black p-gutter w-full max-w-2xl flex flex-col gap-unit shadow-[8px_8px_0_#000]">
+        <p id="result-note" class="font-label-sm text-label-sm text-blush-ink uppercase tracking-wider mb-3 text-center"></p>
+        <div id="result-card" class="bg-white border-2 border-black w-full max-w-2xl flex flex-col shadow-[8px_8px_0_#000]">
           <div id="result-copy"></div>
           <div id="result-map-wrap" class="result-map-wrap hidden">
             <div id="result-map-slot"></div>

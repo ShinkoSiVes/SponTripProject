@@ -77,21 +77,51 @@ function closestFirst(places) {
   return [...places].sort((a, b) => a.distanceKm - b.distanceKm);
 }
 
-export function findMatch(state, catalog = PLACES) {
+function withSpinPool(list, fallback) {
+  if (!list.length) return { place: null, fallback: "empty", alternatives: [] };
+  return {
+    place: list[0],
+    fallback,
+    alternatives: list.slice(1),
+  };
+}
+
+export function findMatch(state, catalog = PLACES, exclude = {}) {
   if (!state.coords) {
     return { place: null, fallback: "no-pin", alternatives: [] };
   }
 
-  const origin = state.coords;
+  const origin = {
+    lat: Number(state.coords.lat),
+    lng: Number(state.coords.lng),
+  };
+  if (!Number.isFinite(origin.lat) || !Number.isFinite(origin.lng)) {
+    return { place: null, fallback: "no-pin", alternatives: [] };
+  }
+
+  const excludeIds = new Set(exclude.ids || []);
+  const excludeNames = new Set(exclude.names || []);
+  const open = catalog.filter((place) => {
+    if (place?.id && excludeIds.has(place.id)) return false;
+    const name = String(place?.name || "").trim().toLowerCase();
+    if (name && excludeNames.has(name)) return false;
+    return true;
+  });
+
   const radius = searchRadiusKm(state);
 
-  const scored = catalog
-    .map((place) => ({
-      ...place,
-      distanceKm: distanceKm(origin, place),
-      intentHits: intentScore(place, state.intent),
-      budgetHits: budgetScore(place, state.budget, state.budgetMax),
-    }))
+  const scored = open
+    .map((place) => {
+      const lat = Number(place.lat);
+      const lng = Number(place.lng);
+      const point = { ...place, lat, lng };
+      return {
+        ...point,
+        distanceKm: Number.isFinite(lat) && Number.isFinite(lng) ? distanceKm(origin, point) : NaN,
+        intentHits: intentScore(place, state.intent),
+        budgetHits: budgetScore(place, state.budget, state.budgetMax),
+      };
+    })
     .sort((a, b) => {
       // Optional detail wins when it matches a place name/tag.
       if (b.intentHits !== a.intentHits) return b.intentHits - a.intentHits;
@@ -112,29 +142,25 @@ export function findMatch(state, catalog = PLACES) {
 
   if (exact.length) {
     const stretch = exact[0].budgetHits === 1;
-    return {
-      place: exact[0],
-      fallback: stretch ? "budget-flex" : null,
-      alternatives: exact.slice(1, 3),
-    };
+    return withSpinPool(exact, stretch ? "budget-flex" : null);
   }
 
   const loose = scored.filter((p) => p.theme === state.theme && withinRadius(p, radius * 2));
 
   if (loose.length) {
-    return { place: loose[0], fallback: "widened", alternatives: loose.slice(1, 3) };
+    return withSpinPool(loose, "widened");
   }
 
   const anyNearby = scored.filter((p) => withinRadius(p, radius * 3));
   if (anyNearby.length) {
-    return { place: anyNearby[0], fallback: "any-nearby", alternatives: anyNearby.slice(1, 3) };
+    return withSpinPool(anyNearby, "any-nearby");
   }
 
   const closest = closestFirst(
     scored.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng) && Number.isFinite(p.distanceKm))
   );
   if (closest.length) {
-    return { place: closest[0], fallback: "any-nearby", alternatives: closest.slice(1, 3) };
+    return withSpinPool(closest, "any-nearby");
   }
 
   return { place: null, fallback: "empty", alternatives: [] };

@@ -158,7 +158,7 @@ export function setLandmarks(places, highlightId, { fit = true } = {}) {
   if (marker && list.length && mapVisible) {
     try {
       const bounds = L.latLngBounds([marker.getLatLng()]);
-      list.slice(0, 12).forEach((place) => {
+      list.forEach((place) => {
         if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
           bounds.extend([place.lat, place.lng]);
         }
