@@ -9,53 +9,113 @@ A sponty-trip planner for friends who cannot pick a plan. Answer a short funnel,
 1. Pick a vibe: Food, Date, Activities, or Entertainment. Optional: add a specific detail
 2. Pick who is coming (the options follow the vibe you chose)
 3. Search or pin a starting point on the map
-4. Choose walking or vehicle, and set how far you will go
+4. Set how far you will go from your pin
 5. Cap the budget
 6. Get a match, then **keep it going** for the next stop or wrap the itinerary
 
-Later loops keep the group and pin so you only re-pick vibe, travel, and budget.
+Later loops keep the group and pin so you only re-pick vibe, distance, and budget.
+
+Matching prefers live nearby places for the selected vibe (**Google → Foursquare → OpenStreetMap → backup list**), then ranks by optional intent keywords, budget fit, rating, and distance. Radius is the only travel filter. If nothing fits, you can auto-widen the search or pick a different pin.
 
 ## Stack
 
 - Vite + vanilla JavaScript
-- Leaflet + OpenStreetMap tiles (no Google Maps JS key)
-- Overpass API for live landmarks (restaurants, parks, cinemas, and similar)
+- Leaflet + OpenStreetMap tiles
+- **Google Places API (New)** for nearby venues (recommended)
+- Foursquare Places as optional fallback
+- Overpass API fallback if no Places key is set
 - Nominatim for location search and reverse geocoding
 - Tailwind via CDN
 - LocalStorage for session restore (`spontrip-state-v1`)
-- Curated backup catalog in `src/places.js` if Overpass is down
-
-Matching uses live OpenStreetMap places inside your pin + radius for the selected vibe, then ranks by optional intent keywords and distance. Walking caps the radius at 4 km. If nothing fits inside the radius, the engine only widens to 2× then 3× that radius. If still nothing, it shows an empty result instead of a far-away place.
+- Curated backup catalog in `src/places.js` if live APIs fail
 
 ## Run locally
 
 ```bash
 npm install
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` and add at least a Google Places key (see below). Then:
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open [http://localhost:5173](http://localhost:5173). Restart the dev server after any `.env` change.
 
 ```bash
 npm run build    # production build to dist/
 npm run preview  # preview the production build
 ```
 
-No env vars or API keys required.
+## API keys
+
+Vite only reads variables that start with `VITE_`. Keys are baked in at **build** time, so a new deploy is required after changing them on Vercel.
+
+### Recommended: Google Places API (New)
+
+Without this key, nearby search falls back to Foursquare, then OpenStreetMap, then the backup list.
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable **Places API (New)** (not the legacy Places API)
+3. Create an API key
+4. Restrict it by HTTP referrer:
+   - `http://localhost:5173/*`
+   - `https://your-vercel-domain.vercel.app/*`
+5. Put it in `.env`:
+
+```bash
+VITE_GOOGLE_MAPS_API_KEY=your_key_here
+```
+
+Local and Vercel traffic goes through `/api/google-places` so the browser does not call Google directly (avoids CORS). The key still ships in the client bundle, so keep referrer restrictions on.
+
+### Optional: Foursquare Places
+
+Used only if Google is missing or returns nothing.
+
+```bash
+VITE_FOURSQUARE_API_KEY=your_key_here
+```
+
+Create a key in the [Foursquare Places console](https://foursquare.com/developers/). Local and Vercel traffic goes through `/api/foursquare`.
+
+### Vercel
+
+In the Vercel project: **Settings → Environment Variables**. Add the same `VITE_` names for Production (and Preview if you want keys on preview deploys), then **redeploy** so the build picks them up.
+
+```bash
+vercel env add VITE_GOOGLE_MAPS_API_KEY
+vercel env add VITE_FOURSQUARE_API_KEY   # optional
+```
+
+Do not commit `.env`. `.env.example` is the template.
 
 ## Project layout
 
 ```
-index.html          # screens and Stitch UI
-src/app.js          # wizard, loop, spin-again
+index.html          # screens
+.env.example        # API key template
+src/app.js          # wizard, loop, match flow
 src/state.js        # state + LocalStorage
 src/groups.js       # Step 2 copy that follows the vibe
 src/places.js       # curated backup places
-src/match.js        # haversine + filters + fallbacks
-src/landmarks.js    # Overpass live POIs
+src/match.js        # distance + budget + ranking
+src/landmarks.js    # Google + Foursquare + Overpass live POIs
+src/googlePlaces.js # Google Places Nearby Search
+src/foursquare.js   # Foursquare Places Nearby Search
 src/geocode.js      # Nominatim search and reverse geocoding
 src/map.js          # Leaflet pin, radius, landmark dots
 src/styles.css      # screen show/hide and selected states
+vite.config.js      # local API proxies
+vercel.json         # production API rewrites
 ```
 
 ## Design

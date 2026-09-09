@@ -4,7 +4,7 @@ dist
 *.local
 .env
 .env.*
+!.env.example
 installer.html
 .vercel
-
-.vercel
+.~lock.*

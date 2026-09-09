@@ -8,12 +8,20 @@ import {
   baselineForNextActivity,
   searchRadiusKm,
 } from "./state.js";
-import { findMatch } from "./match.js";
+import { findMatch, distanceKm } from "./match.js";
 import { fetchLandmarks, loadCatalog } from "./landmarks.js";
 import { PLACES } from "./places.js";
 import { reverseLabel, searchLocations } from "./geocode.js";
 import { initMap, setPin, updateCircle, refreshMapSize, setLandmarks, clearLandmarks } from "./map.js";
 import { groupCopyFor, groupFitsTheme, groupLabel } from "./groups.js";
+import { hasFoursquarePlaces } from "./foursquare.js";
+import { hasGooglePlaces } from "./googlePlaces.js";
+
+function nearbyProviderLabel() {
+  if (hasGooglePlaces()) return "Google";
+  if (hasFoursquarePlaces()) return "Foursquare";
+  return "OpenStreetMap";
+}
 
 let state = loadState();
 
@@ -32,25 +40,98 @@ function updateLandmarkStatus(text) {
 async function refreshLandmarks() {
   if (!state.coords || !state.theme) {
     clearLandmarks();
+    renderNearbyList([]);
     updateLandmarkStatus("");
     return;
   }
   const token = ++landmarkToken;
-  updateLandmarkStatus("Loading nearby spots…");
+  updateLandmarkStatus(`Finding nearby places with ${nearbyProviderLabel()}…`);
   try {
     const places = await fetchLandmarks(state);
     if (token !== landmarkToken) return;
-    setLandmarks(places, state.match?.id);
+    const ranked = [...places]
+      .map((place) => ({
+        ...place,
+        distanceKm:
+          place.distanceKm != null
+            ? place.distanceKm
+            : distanceKm(state.coords, place),
+      }))
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+    setLandmarks(ranked, state.match?.id);
+    renderNearbyList(ranked);
+    const sourceLabel =
+      ranked[0]?.source === "google"
+        ? "Google"
+        : ranked[0]?.source === "foursquare"
+          ? "Foursquare"
+          : ranked[0]?.source === "backup"
+            ? "backup list"
+            : "OpenStreetMap";
     updateLandmarkStatus(
-      places.length
-        ? `${places.length} real ${state.theme} spots in this area`
-        : "No mapped spots yet for this vibe"
+      ranked.length
+        ? `${ranked.length} nearby ${state.theme} spots from ${sourceLabel}`
+        : "No mapped spots yet for this vibe. Try widening the radius."
     );
-  } catch {
+  } catch (err) {
     if (token !== landmarkToken) return;
     clearLandmarks();
-    updateLandmarkStatus("Live map is busy. Matching can still use the backup list.");
+    renderNearbyList([]);
+    const msg = String(err?.message || "");
+    if (/credits remaining|429|401|403/i.test(msg)) {
+      updateLandmarkStatus("Foursquare is blocked (credits/auth). Falling back…");
+    } else {
+      updateLandmarkStatus("Live nearby search is busy. Try again in a moment.");
+    }
   }
+}
+
+function renderNearbyList(places) {
+  const box = $("nearby-list");
+  if (!box) return;
+  if (!places?.length) {
+    box.innerHTML = "";
+    box.classList.add("hidden");
+    return;
+  }
+  const top = places.slice(0, 6);
+  box.innerHTML = `
+    <div class="nearby-list-head">Nearby for your vibe</div>
+    <ul class="nearby-list-items">
+      ${top
+        .map((place) => {
+          const rating =
+            place.rating != null
+              ? `<span class="nearby-rating">${place.rating.toFixed(1)}★${
+                  place.ratingCount ? ` (${place.ratingCount})` : ""
+                }</span>`
+              : "";
+          const dist =
+            place.distanceKm != null
+              ? `<span class="nearby-dist">${place.distanceKm.toFixed(1)} km</span>`
+              : "";
+          return `<li>
+            <button type="button" class="nearby-item" data-nearby-id="${escapeHtml(place.id)}">
+              <span class="nearby-name">${escapeHtml(place.name)}</span>
+              <span class="nearby-meta">${escapeHtml(place.area)}${rating ? " · " : ""}${rating}${
+            dist ? ` · ${dist}` : ""
+          }</span>
+              <span class="nearby-blurb">${escapeHtml(place.blurb || "")}</span>
+            </button>
+          </li>`;
+        })
+        .join("")}
+    </ul>
+  `;
+  box.classList.remove("hidden");
+  box.querySelectorAll("[data-nearby-id]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const place = top.find((p) => p.id === btn.dataset.nearbyId);
+      if (!place) return;
+      setPin({ lat: place.lat, lng: place.lng }, searchRadiusKm(state));
+      setLandmarks(places, place.id);
+    });
+  });
 }
 
 function scheduleLandmarkRefresh() {
@@ -147,16 +228,12 @@ function canAdvance() {
     case STEPS.MAP:
       return Boolean(state.coords);
     case STEPS.RADIUS:
-      return state.radiusKm >= 0.5 && Boolean(state.transitMode);
+      return state.radiusKm >= 0.5;
     case STEPS.BUDGET:
       return Boolean(state.budget) || (state.budgetMax != null && state.budgetMax > 0);
     default:
       return false;
   }
-}
-
-function travelPreviewKm() {
-  return searchRadiusKm(state);
 }
 
 function go(step) {
@@ -214,32 +291,60 @@ async function runMatch() {
     btn.disabled = true;
     if (label) label.textContent = "Finding...";
   }
-  try {
-    const catalog = await loadCatalog(state);
-    const result = findMatch(state, catalog);
-    setLandmarks(catalog, result.place?.id);
+
+  const finish = (result, catalog = [], extra = {}) => {
+    try {
+      setLandmarks(catalog, result.place?.id);
+    } catch {
+      // Map is often hidden on the result screen; never block the match.
+    }
+    const { statePatch = {}, autoWidenedTo } = extra;
     setState({
       step: STEPS.RESULT,
       match: result.place,
-      matchMeta: { fallback: result.fallback, alternatives: result.alternatives },
+      matchMeta: {
+        fallback: result.fallback,
+        alternatives: result.alternatives,
+        ...(autoWidenedTo != null ? { autoWidenedTo } : {}),
+      },
+      ...statePatch,
     });
-  } catch (err) {
-    // Restore button so the user can try again
-    if (btn) {
-      btn.disabled = false;
-      if (label) label.textContent = "Find match";
+  };
+
+  try {
+    const catalog = await Promise.race([
+      loadCatalog(state),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("match deadline")), 12000)),
+    ]);
+
+    let result = findMatch(state, catalog);
+    if (result.place) {
+      finish(result, catalog);
+      return;
     }
-    // Fall back to the curated list and try once more
+
+    // Soft local widen before showing empty (no extra API spam).
+    if (catalog.length) {
+      let radiusKm = Number(state.radiusKm) || 8;
+      for (let i = 0; i < 20 && radiusKm < 80; i += 1) {
+        radiusKm = Math.min(80, radiusKm + 1);
+        result = findMatch({ ...state, radiusKm }, catalog);
+        if (result.place) {
+          finish(result, catalog, {
+            autoWidenedTo: radiusKm,
+            statePatch: { radiusKm },
+          });
+          return;
+        }
+      }
+    }
+
+    finish({ place: null, fallback: "empty", alternatives: [] }, catalog);
+  } catch {
     try {
       const result = findMatch(state, PLACES);
-      setLandmarks([], null);
-      setState({
-        step: STEPS.RESULT,
-        match: result.place,
-        matchMeta: { fallback: result.fallback ?? "any-nearby", alternatives: result.alternatives },
-      });
+      finish(result, []);
     } catch {
-      // Last resort: show empty result screen
       setState({
         step: STEPS.RESULT,
         match: null,
@@ -328,7 +433,7 @@ async function runPlaceSearch(query) {
   const list = $("place-search-results");
   if (!list) return;
   try {
-    const hits = await searchLocations(query);
+    const hits = await searchLocations(query, state.coords);
     if (token !== searchToken) return;
     if (!hits.length) {
       list.innerHTML = `<li><span class="place-search-detail">No places found</span></li>`;
@@ -375,6 +480,7 @@ function directionsUrl(place) {
 function fallbackCopy(kind) {
   if (kind === "widened") return "Nothing sat inside your radius. Closest same-theme stop nearby:";
   if (kind === "any-nearby") return "Nothing matched every filter. Nearby option instead:";
+  if (kind === "budget-flex") return "Closest fit was one step above your budget pick:";
   if (kind === "empty") return "Nothing is inside that radius. Go back and widen it.";
   if (kind === "no-pin") return "Drop a pin first so we can match a place.";
   return "";
@@ -418,7 +524,7 @@ function bindOnce() {
     state.radiusKm = radiusKm;
     persist();
     $("radius-value").textContent = String(radiusKm);
-    if (state.coords) updateCircle(state.coords, travelPreviewKm());
+    if (state.coords) updateCircle(state.coords, searchRadiusKm(state));
     scheduleLandmarkRefresh();
   });
   document.querySelectorAll("[data-budget]").forEach((btn) => {
@@ -430,9 +536,6 @@ function bindOnce() {
     if (value) state.budget = null;
     persist();
     $("next-btn").disabled = !canAdvance();
-  });
-  document.querySelectorAll("[data-transit]").forEach((btn) => {
-    btn.addEventListener("click", () => setState({ transitMode: btn.dataset.transit }));
   });
   $("back-btn").addEventListener("click", back);
   $("header-back").addEventListener("click", back);
@@ -490,9 +593,6 @@ function renderChoices() {
   document.querySelectorAll("[data-budget]").forEach((btn) => {
     btn.classList.toggle("is-picked", btn.dataset.budget === state.budget);
   });
-  document.querySelectorAll("[data-transit]").forEach((btn) => {
-    btn.classList.toggle("is-picked", btn.dataset.transit === state.transitMode);
-  });
 }
 
 function spinAgain() {
@@ -507,16 +607,103 @@ function spinAgain() {
   });
 }
 
+function pickDifferentLocation() {
+  setState({
+    step: STEPS.MAP,
+    match: null,
+    matchMeta: null,
+  });
+}
+
+async function autoWidenAndRematch() {
+  const note = $("result-note");
+  const widenBtn = $("widen-radius-btn");
+  const locationBtn = $("pick-location-btn");
+  const status = $("widen-status");
+
+  if (widenBtn) widenBtn.disabled = true;
+  if (locationBtn) locationBtn.disabled = true;
+  if (note) note.textContent = "Searching nearby places…";
+  if (status) status.textContent = "Loading Google places…";
+
+  const maxKm = 80;
+  const fetchRadius = Math.min(maxKm, Math.max(Number(state.radiusKm) || 8, 20));
+
+  try {
+    const catalog = await Promise.race([
+      loadCatalog({ ...state, radiusKm: fetchRadius }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("widen deadline")), 10000)),
+    ]);
+
+    if (!catalog.length) {
+      if (note) note.textContent = "No live places came back. Try another pin.";
+      if (status) status.textContent = "Nearby search returned 0 places.";
+      return;
+    }
+
+    const trial = { ...state, radiusKm: fetchRadius };
+    const result = findMatch(trial, catalog);
+    if (!result.place) {
+      if (note) note.textContent = "Places loaded, but none could be scored.";
+      if (status) status.textContent = `${catalog.length} spots found, none usable.`;
+      return;
+    }
+
+    const usedKm = Math.max(
+      1,
+      Math.ceil((result.place.distanceKm || distanceKm(state.coords, result.place) || fetchRadius) * 10) / 10
+    );
+    setState({
+      step: STEPS.RESULT,
+      radiusKm: Math.min(maxKm, usedKm),
+      match: result.place,
+      matchMeta: {
+        fallback: result.fallback || "widened",
+        alternatives: result.alternatives,
+        autoWidenedTo: usedKm,
+      },
+    });
+  } catch {
+    if (note) note.textContent = "Search timed out. Try a different location.";
+    if (status) status.textContent = "Could not finish the nearby search.";
+  } finally {
+    if (widenBtn) widenBtn.disabled = false;
+    if (locationBtn) locationBtn.disabled = false;
+  }
+}
+
 function renderResult() {
   const place = state.match;
   const box = $("result-card");
   const note = $("result-note");
   if (!place) {
-    box.innerHTML = "<p class='font-body-md'>No place could be matched. Go back and widen the radius or budget.</p>";
+    const currentRadius = Number(state.radiusKm) || 8;
     note.textContent = fallbackCopy(state.matchMeta?.fallback);
+    box.innerHTML = `
+      <div class="flex flex-col gap-4 items-stretch text-left">
+        <p class="font-body-md text-center">No place could be matched near your pin.</p>
+        <p id="widen-status" class="font-label-sm text-label-sm text-electric-purple text-center uppercase tracking-wider">
+          Current radius: ${currentRadius} km
+        </p>
+        <button id="widen-radius-btn" class="w-full bg-neon-cyan border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-white" type="button">
+          <span class="material-symbols-outlined">zoom_out_map</span>
+          Increase radius automatically
+        </button>
+        <button id="pick-location-btn" class="w-full bg-white border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-surface-container" type="button">
+          <span class="material-symbols-outlined">edit_location_alt</span>
+          Pick a different location
+        </button>
+      </div>
+    `;
+    $("widen-radius-btn").onclick = () => autoWidenAndRematch();
+    $("pick-location-btn").onclick = () => pickDifferentLocation();
     return;
   }
-  note.textContent = fallbackCopy(state.matchMeta?.fallback);
+  const widenNote =
+    state.matchMeta?.autoWidenedTo != null
+      ? ` Found after widening to ${state.matchMeta.autoWidenedTo} km.`
+      : "";
+  note.textContent = `${fallbackCopy(state.matchMeta?.fallback)}${widenNote}`.trim();
   const dist = place.distanceKm != null ? `${place.distanceKm.toFixed(1)} km` : "Nearby";
   const badge =
     place.rating != null ? `${place.rating}/5` : escapeHtml(place.osmType || "Live pin");
@@ -638,7 +825,6 @@ function render() {
   $("budget-max").value = state.budgetMax ?? "";
   $("location-label").textContent = state.locationLabel || "No pin yet. Tap the map.";
   $("radius-location").textContent = state.locationLabel || "No pin yet";
-  $("walk-cap-note").classList.toggle("hidden", state.transitMode !== "walk");
   $("baseline-note").classList.toggle("hidden", state.loopCount === 0);
   $("baseline-note").textContent =
     state.loopCount > 0
@@ -648,16 +834,19 @@ function render() {
   renderChoices();
   syncThemeSlider();
 
-  if (state.step !== STEPS.MAP) hidePlaceResults();
+  if (state.step !== STEPS.MAP) {
+    hidePlaceResults();
+    renderNearbyList([]);
+  }
 
   if (state.step === STEPS.MAP || state.step === STEPS.RADIUS) {
     initMap("map", {
       coords: state.coords,
-      radiusKm: state.step === STEPS.RADIUS ? travelPreviewKm() : state.radiusKm,
+      radiusKm: searchRadiusKm(state),
       onSelect: onMapSelect,
     });
     if (state.step === STEPS.RADIUS && state.coords) {
-      setPin(state.coords, travelPreviewKm());
+      setPin(state.coords, searchRadiusKm(state));
     }
     setTimeout(refreshMapSize, 50);
     scheduleLandmarkRefresh();

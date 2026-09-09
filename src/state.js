@@ -36,9 +36,7 @@ const VALID_THEMES = new Set(["food", "date", "activities", "entertainment"]);
 
 export function searchRadiusKm(state) {
   const km = Number(state.radiusKm);
-  const radius = Number.isFinite(km) && km > 0 ? km : 8;
-  if (state.transitMode === "walk") return Math.min(radius, 4);
-  return radius;
+  return Number.isFinite(km) && km > 0 ? km : 8;
 }
 
 export function emptyState() {
@@ -52,7 +50,6 @@ export function emptyState() {
     radiusKm: 8,
     budget: null,
     budgetMax: null,
-    transitMode: null,
     match: null,
     matchMeta: null,
     itinerary: [],
@@ -67,6 +64,7 @@ export function loadState() {
     const loaded = { ...emptyState(), ...JSON.parse(raw) };
     if (loaded.step === STEPS.THEME) loaded.step = STEPS.INTENT;
     if (loaded.step === STEPS.TRANSIT) loaded.step = STEPS.RADIUS;
+    delete loaded.transitMode;
     if (loaded.theme === "trips") loaded.theme = "activities";
     if (loaded.theme === "travel") loaded.theme = "date";
     if (loaded.theme && !VALID_THEMES.has(loaded.theme)) loaded.theme = null;

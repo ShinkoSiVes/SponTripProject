@@ -26,15 +26,39 @@ function groupFits(place, groupSize) {
   return true;
 }
 
+const BUDGET_RANK = { budget: 1, moderate: 2, splurge: 3 };
+
 function budgetFits(place, budget, budgetMax) {
+  // Unknown live prices are allowed so coverage stays high.
   if (place.costPhp == null && !place.budget) return true;
+
   if (budgetMax != null && Number.isFinite(budgetMax) && place.costPhp != null) {
-    return place.costPhp <= budgetMax;
+    // Soft peso cap: prefer under max, allow up to +25% as stretch.
+    return place.costPhp <= budgetMax * 1.25;
   }
+
   if (!budget) return true;
   if (!place.budget) return true;
-  const rank = { budget: 1, moderate: 2, splurge: 3 };
-  return rank[place.budget] <= rank[budget];
+
+  const preferred = BUDGET_RANK[budget] || 1;
+  const actual = BUDGET_RANK[place.budget] || 1;
+  // Flexible: selected tier + one step up (Budget can also take Moderate).
+  return actual <= preferred + 1;
+}
+
+function budgetScore(place, budget, budgetMax) {
+  // Higher score = closer to what the user asked for.
+  if (budgetMax != null && Number.isFinite(budgetMax) && place.costPhp != null) {
+    if (place.costPhp <= budgetMax) return 2;
+    if (place.costPhp <= budgetMax * 1.25) return 1;
+    return 0;
+  }
+  if (!budget || !place.budget) return 1;
+  const preferred = BUDGET_RANK[budget] || 1;
+  const actual = BUDGET_RANK[place.budget] || 1;
+  if (actual <= preferred) return 2;
+  if (actual === preferred + 1) return 1;
+  return 0;
 }
 
 function intentScore(place, intent) {
@@ -68,8 +92,11 @@ export function findMatch(state, catalog = PLACES) {
       ...place,
       distanceKm: distanceKm(origin, place),
       intentHits: intentScore(place, state.intent),
+      budgetHits: budgetScore(place, state.budget, state.budgetMax),
     }))
     .sort((a, b) => {
+      // Prefer places inside the chosen budget first, then stretch options.
+      if (b.budgetHits !== a.budgetHits) return b.budgetHits - a.budgetHits;
       if (b.intentHits !== a.intentHits) return b.intentHits - a.intentHits;
       const ratingA = a.rating ?? 0;
       const ratingB = b.rating ?? 0;
@@ -82,35 +109,36 @@ export function findMatch(state, catalog = PLACES) {
       p.theme === state.theme &&
       withinRadius(p, radius) &&
       groupFits(p, state.groupSize) &&
-      budgetFits(p, state.budget, state.budgetMax) &&
-      (state.transitMode !== "walk" || p.walkable)
+      budgetFits(p, state.budget, state.budgetMax)
   );
 
   if (exact.length) {
-    return { place: exact[0], fallback: null, alternatives: exact.slice(1, 3) };
+    const stretch = exact[0].budgetHits === 1;
+    return {
+      place: exact[0],
+      fallback: stretch ? "budget-flex" : null,
+      alternatives: exact.slice(1, 3),
+    };
   }
 
   const loose = closestFirst(
-    scored.filter(
-      (p) =>
-        p.theme === state.theme &&
-        withinRadius(p, radius * 2) &&
-        (state.transitMode !== "walk" || p.walkable)
-    )
+    scored.filter((p) => p.theme === state.theme && withinRadius(p, radius * 2))
   );
 
   if (loose.length) {
     return { place: loose[0], fallback: "widened", alternatives: loose.slice(1, 3) };
   }
 
-  const anyNearby = closestFirst(
-    scored.filter(
-      (p) =>
-        withinRadius(p, radius * 3) && (state.transitMode !== "walk" || p.walkable)
-    )
-  );
+  const anyNearby = closestFirst(scored.filter((p) => withinRadius(p, radius * 3)));
   if (anyNearby.length) {
     return { place: anyNearby[0], fallback: "any-nearby", alternatives: anyNearby.slice(1, 3) };
+  }
+
+  const closest = closestFirst(
+    scored.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng) && Number.isFinite(p.distanceKm))
+  );
+  if (closest.length) {
+    return { place: closest[0], fallback: "any-nearby", alternatives: closest.slice(1, 3) };
   }
 
   return { place: null, fallback: "empty", alternatives: [] };

@@ -1,5 +1,8 @@
 const NOMINATIM = "https://nominatim.openstreetmap.org";
-const HEADERS = { Accept: "application/json" };
+const HEADERS = {
+  Accept: "application/json",
+  "Accept-Language": "en",
+};
 
 function shortLabel(hit) {
   const address = hit.address || {};
@@ -26,16 +29,26 @@ export async function reverseLabel(coords) {
   }
 }
 
-export async function searchLocations(query) {
+export async function searchLocations(query, near = null) {
   const q = query.trim();
   if (q.length < 2) return [];
 
   const params = new URLSearchParams({
     format: "jsonv2",
     q,
-    limit: "6",
+    limit: "8",
     addressdetails: "1",
   });
+
+  // Prefer results near the current pin without locking the search to one city.
+  if (near?.lat != null && near?.lng != null) {
+    const d = 0.35;
+    params.set(
+      "viewbox",
+      `${near.lng - d},${near.lat + d},${near.lng + d},${near.lat - d}`
+    );
+    params.set("bounded", "0");
+  }
 
   const res = await fetch(`${NOMINATIM}/search?${params}`, { headers: HEADERS });
   if (!res.ok) throw new Error("search failed");

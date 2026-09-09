@@ -1,4 +1,4 @@
-const MAKATI = [14.5547, 121.0244];
+const WORLD_VIEW = [20, 0];
 
 let map;
 let marker;
@@ -20,7 +20,10 @@ export function initMap(containerId, { coords, radiusKm, onSelect }) {
     return;
   }
 
-  map = L.map(el, { zoomControl: true }).setView(coords ? [coords.lat, coords.lng] : MAKATI, 13);
+  map = L.map(el, { zoomControl: true }).setView(
+    coords ? [coords.lat, coords.lng] : WORLD_VIEW,
+    coords ? 14 : 2
+  );
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -99,7 +102,8 @@ export function setLandmarks(places, highlightId) {
   if (!map) return;
   if (!poiLayer) poiLayer = L.layerGroup().addTo(map);
   poiLayer.clearLayers();
-  (places || []).forEach((place) => {
+  const list = places || [];
+  list.forEach((place) => {
     const picked = place.id === highlightId;
     const dot = L.circleMarker([place.lat, place.lng], {
       radius: picked ? 10 : 7,
@@ -108,23 +112,32 @@ export function setLandmarks(places, highlightId) {
       fillColor: picked ? "#9D00FF" : "#00FFFF",
       fillOpacity: 0.92,
     });
-    dot.bindTooltip(place.name, { direction: "top", offset: [0, -8] });
+    const tip = place.rating
+      ? `${place.name} · ${place.rating.toFixed(1)}★`
+      : place.name;
+    dot.bindTooltip(tip, { direction: "top", offset: [0, -8] });
     poiLayer.addLayer(dot);
   });
   poiLayer.bringToFront();
   if (marker) marker.bringToFront();
+
+  const container = map.getContainer?.();
+  const mapVisible = container && container.offsetParent && container.clientWidth > 0;
+  if (marker && list.length && mapVisible) {
+    try {
+      const bounds = L.latLngBounds([marker.getLatLng()]);
+      list.slice(0, 12).forEach((place) => {
+        if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
+          bounds.extend([place.lat, place.lng]);
+        }
+      });
+      map.fitBounds(bounds.pad(0.2), { maxZoom: 15, animate: false });
+    } catch {
+      // Don't block matching if the map is hidden or bounds are invalid.
+    }
+  }
 }
 
 export function clearLandmarks() {
   if (poiLayer) poiLayer.clearLayers();
-}
-
-export function destroyMap() {
-  if (map) {
-    map.remove();
-    map = null;
-    marker = null;
-    circle = null;
-    poiLayer = null;
-  }
 }

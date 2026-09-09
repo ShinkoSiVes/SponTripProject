@@ -92,6 +92,11 @@
 
     <main class="flex-grow flex flex-col">
       <section id="screen-start" class="screen relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+        <div class="hero-photo-collage" aria-hidden="true">
+          <img src="/themes/food-2.jpg" alt="" />
+          <img src="/themes/date-2.jpg" alt="" />
+          <img src="/themes/activities-3.jpg" alt="" />
+        </div>
         <div class="absolute inset-0 z-0 opacity-10 pointer-events-none dot-grid"></div>
         <div class="absolute top-10 left-10 w-24 h-24 border-2 border-black rounded-full opacity-20 pointer-events-none"></div>
         <div class="absolute bottom-10 right-10 w-32 h-32 border-2 border-black rotate-45 opacity-20 pointer-events-none"></div>
@@ -179,6 +184,11 @@
 
       <section id="screen-group" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-lg pb-28">
         <div class="bg-white border-2 border-black p-margin-md w-full max-w-2xl shadow-[4px_4px_0_#000]">
+          <div class="screen-photo-strip mb-margin-sm" aria-hidden="true">
+            <img src="/themes/food-1.jpg" alt="" />
+            <img src="/themes/date-1.jpg" alt="" />
+            <img src="/themes/entertainment-2.jpg" alt="" />
+          </div>
           <div id="group-kicker" class="font-label-bold text-label-bold mb-margin-sm text-slate-muted">WHO'S COMING</div>
           <h2 id="group-heading" class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2">How many will be going?</h2>
           <p id="group-sub" class="font-body-md text-body-md text-on-surface-variant mb-margin-md">Pick the size of the group.</p>
@@ -190,7 +200,7 @@
         <div class="w-full max-w-4xl bg-white border-2 border-black p-gutter flex flex-col gap-gutter shadow-[8px_8px_0_#000]">
           <span class="font-label-bold text-label-bold bg-black text-white px-2 py-1 inline-block self-start uppercase tracking-widest">Step 3</span>
           <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg">Pick your anchor location</h2>
-          <p class="font-body-lg text-body-lg text-on-surface-variant">Search a spot, use your location, or tap the map to drop a pin. Cyan dots are real nearby places for your vibe.</p>
+          <p class="font-body-lg text-body-lg text-on-surface-variant">Search a spot, use your location, or tap the map. Nearby places for your vibe appear as cyan dots and a list below.</p>
           <div class="flex flex-col sm:flex-row gap-gutter">
             <div class="place-search relative flex-1">
               <label class="sr-only" for="place-search">Search a location</label>
@@ -200,6 +210,7 @@
             <button id="geo-btn" class="self-stretch sm:self-start bg-white border-2 border-black px-4 py-3 font-label-bold text-label-bold shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white whitespace-nowrap" type="button">Use my location</button>
           </div>
           <div id="map-slot" class="w-full aspect-square md:aspect-video border-2 border-black overflow-hidden bg-surface-container cursor-crosshair"></div>
+          <div id="nearby-list" class="nearby-list hidden"></div>
           <div class="border-t-2 border-black pt-gutter flex flex-col gap-unit">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Selected Anchor</span>
             <div class="flex items-center gap-gutter bg-surface-container-low p-3 border border-black border-dashed">
@@ -216,21 +227,15 @@
           <div class="absolute inset-0 bg-neon-cyan translate-x-1 translate-y-1 -z-10 border-2 border-black hidden md:block"></div>
           <div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-white border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">Step 4</div>
           <div class="flex flex-col gap-margin-md mt-4">
+            <div class="screen-photo-strip compact" aria-hidden="true">
+              <img src="/themes/activities-1.jpg" alt="" />
+              <img src="/themes/entertainment-1.jpg" alt="" />
+              <img src="/themes/food-3.jpg" alt="" />
+            </div>
             <div class="text-center">
-              <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black mb-unit">How will you get around?</h2>
-              <p class="font-body-md text-body-md text-on-surface-variant">Pick walking or a vehicle, then set how far you will go.</p>
+              <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black mb-unit">How far will you go?</h2>
+              <p class="font-body-md text-body-md text-on-surface-variant">Set a search radius from your pin. Nearby places inside this distance can match.</p>
             </div>
-            <div class="grid grid-cols-2 gap-gutter">
-              <button type="button" data-transit="walk" class="bg-white border-2 border-black p-4 flex flex-col items-center justify-center gap-2 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
-                <span class="material-symbols-outlined text-5xl leading-none">directions_walk</span>
-                <span class="font-headline-md text-headline-md">Walking</span>
-              </button>
-              <button type="button" data-transit="vehicle" class="bg-white border-2 border-black p-4 flex flex-col items-center justify-center gap-2 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
-                <span class="material-symbols-outlined text-5xl leading-none">directions_car</span>
-                <span class="font-headline-md text-headline-md">Vehicle</span>
-              </button>
-            </div>
-            <p id="walk-cap-note" class="hidden font-label-sm text-label-sm text-electric-purple uppercase tracking-wider text-center">Walking caps the search at 4 km.</p>
             <div class="flex flex-col gap-gutter bg-surface p-gutter border-2 border-black">
               <div class="flex justify-between items-end">
                 <span class="font-label-bold text-label-bold text-on-surface-variant">Distance</span>
@@ -257,18 +262,23 @@
           <div class="mb-margin-md text-center">
             <span class="font-label-bold text-label-bold text-electric-purple uppercase tracking-widest mb-2 block">Step 5</span>
             <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black">How much are you willing to spend?</h2>
-            <p class="font-body-md text-body-md text-on-surface-variant mt-2">Select a budget tier for your spontaneous getaway.</p>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-2">We prioritize your pick, then stretch one tier up if needed (Budget can also include Moderate).</p>
+          </div>
+          <div class="screen-photo-strip mb-margin-md" aria-hidden="true">
+            <img src="/themes/food-2.jpg" alt="" />
+            <img src="/themes/date-3.jpg" alt="" />
+            <img src="/themes/activities-2.jpg" alt="" />
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-card-gap">
             <button type="button" data-budget="budget" class="bg-white border-2 border-black p-6 flex flex-col items-center text-center hover:bg-surface-container">
               <span class="material-symbols-outlined text-4xl mb-4">wallet</span>
               <h3 class="font-headline-md text-headline-md mb-2">Budget</h3>
-              <p class="font-body-md text-on-surface-variant">Keep it lean.</p>
+              <p class="font-body-md text-on-surface-variant">Priority cheap, Moderate OK.</p>
             </button>
             <button type="button" data-budget="moderate" class="bg-white border-2 border-black p-6 flex flex-col items-center text-center hover:bg-surface-container">
               <span class="material-symbols-outlined text-4xl mb-4">payments</span>
               <h3 class="font-headline-md text-headline-md mb-2">Moderate</h3>
-              <p class="font-body-md text-on-surface-variant">Comfortable.</p>
+              <p class="font-body-md text-on-surface-variant">Comfortable, Splurge OK.</p>
             </button>
             <button type="button" data-budget="splurge" class="bg-white border-2 border-black p-6 flex flex-col items-center text-center hover:bg-surface-container">
               <span class="material-symbols-outlined text-4xl mb-4">diamond</span>
@@ -290,6 +300,11 @@
 
       <section id="screen-loop" class="screen flex-grow flex items-center justify-center p-gutter md:p-margin-lg">
         <div class="w-full max-w-2xl bg-white border-2 border-black shadow-[12px_12px_0_#000] p-margin-md md:p-margin-lg flex flex-col gap-margin-md">
+          <div class="screen-photo-strip compact" aria-hidden="true">
+            <img src="/themes/entertainment-3.jpg" alt="" />
+            <img src="/themes/date-2.jpg" alt="" />
+            <img src="/themes/activities-1.jpg" alt="" />
+          </div>
           <div class="inline-block self-start border-2 border-black bg-surface-container px-3 py-1 font-label-sm text-label-sm uppercase tracking-wider">Loop Decision</div>
           <h2 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl uppercase tracking-tighter">Do you want to keep the sponty trip going?</h2>
           <div id="loop-itinerary"></div>
