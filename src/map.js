@@ -7,16 +7,16 @@ let poiLayer;
 let onPin;
 let activeRadiusKm = 8;
 
-export function initMap(containerId, { coords, radiusKm, onSelect }) {
+export function initMap(containerId, { coords, radiusKm, onSelect, showCircle = true }) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
   activeRadiusKm = radiusKm;
-  onPin = onSelect;
+  onPin = onSelect || null;
 
   if (map) {
     map.invalidateSize();
-    setPin(coords, radiusKm);
+    setPin(coords, radiusKm, { showCircle });
     return;
   }
 
@@ -33,16 +33,23 @@ export function initMap(containerId, { coords, radiusKm, onSelect }) {
   poiLayer = L.layerGroup().addTo(map);
 
   map.on("click", (event) => {
+    if (!onPin) return;
     const next = { lat: event.latlng.lat, lng: event.latlng.lng };
     setPin(next, activeRadiusKm);
-    if (onPin) onPin(next);
+    onPin(next);
   });
 
-  setPin(coords, radiusKm);
+  setPin(coords, radiusKm, { showCircle });
   requestAnimationFrame(() => map.invalidateSize());
 }
 
-export function setPin(coords, radiusKm) {
+function syncMarkerDrag() {
+  if (!marker?.dragging) return;
+  if (onPin) marker.dragging.enable();
+  else marker.dragging.disable();
+}
+
+export function setPin(coords, radiusKm, { showCircle = true } = {}) {
   if (!map) return;
   if (radiusKm != null) activeRadiusKm = radiusKm;
 
@@ -61,18 +68,25 @@ export function setPin(coords, radiusKm) {
   const latlng = [coords.lat, coords.lng];
 
   if (!marker) {
-    marker = L.marker(latlng, { draggable: true }).addTo(map);
+    marker = L.marker(latlng, { draggable: Boolean(onPin) }).addTo(map);
     marker.on("dragend", () => {
+      if (!onPin) return;
       const pos = marker.getLatLng();
       const next = { lat: pos.lat, lng: pos.lng };
       updateCircle(next, activeRadiusKm);
-      if (onPin) onPin(next);
+      onPin(next);
     });
   } else {
     marker.setLatLng(latlng);
   }
+  syncMarkerDrag();
 
-  updateCircle(coords, activeRadiusKm);
+  if (showCircle) {
+    updateCircle(coords, activeRadiusKm);
+  } else if (circle) {
+    map.removeLayer(circle);
+    circle = null;
+  }
   map.panTo(latlng);
 }
 
@@ -85,7 +99,7 @@ export function updateCircle(coords, radiusKm) {
       radius: meters,
       color: "#000000",
       weight: 2,
-      fillColor: "#00FFFF",
+      fillColor: "#A8E4DC",
       fillOpacity: 0.18,
     }).addTo(map);
   } else {
@@ -98,18 +112,35 @@ export function refreshMapSize() {
   if (map) map.invalidateSize();
 }
 
-export function setLandmarks(places, highlightId) {
+export function focusPlaces(points, maxZoom = 16) {
+  if (!map || !points?.length) return;
+  const valid = points.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+  if (!valid.length) return;
+  try {
+    if (valid.length === 1) {
+      map.setView([valid[0].lat, valid[0].lng], Math.min(maxZoom, 16), { animate: false });
+      return;
+    }
+    const bounds = L.latLngBounds(valid.map((p) => [p.lat, p.lng]));
+    map.fitBounds(bounds.pad(0.28), { maxZoom, animate: false });
+  } catch {
+    // Ignore invalid bounds.
+  }
+}
+
+export function setLandmarks(places, highlightId, { fit = true } = {}) {
   if (!map) return;
   if (!poiLayer) poiLayer = L.layerGroup().addTo(map);
   poiLayer.clearLayers();
   const list = places || [];
   list.forEach((place) => {
+    if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) return;
     const picked = place.id === highlightId;
     const dot = L.circleMarker([place.lat, place.lng], {
       radius: picked ? 10 : 7,
       color: "#000000",
       weight: 2,
-      fillColor: picked ? "#9D00FF" : "#00FFFF",
+      fillColor: picked ? "#E8B5AB" : "#A8E4DC",
       fillOpacity: 0.92,
     });
     const tip = place.rating
@@ -121,6 +152,7 @@ export function setLandmarks(places, highlightId) {
   poiLayer.bringToFront();
   if (marker) marker.bringToFront();
 
+  if (!fit) return;
   const container = map.getContainer?.();
   const mapVisible = container && container.offsetParent && container.clientWidth > 0;
   if (marker && list.length && mapVisible) {
@@ -141,3 +173,4 @@ export function setLandmarks(places, highlightId) {
 export function clearLandmarks() {
   if (poiLayer) poiLayer.clearLayers();
 }
+

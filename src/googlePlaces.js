@@ -1,4 +1,5 @@
 import { searchRadiusKm } from "./state.js";
+import { intentKeywords, intentQuery } from "./intent.js";
 
 // Google Nearby Search (New) works best with one included type per request.
 const THEME_TYPES = {
@@ -16,6 +17,18 @@ const PRICE_LABEL = {
   PRICE_LEVEL_VERY_EXPENSIVE: { budget: "splurge", costLabel: "Splurge" },
 };
 
+const FIELD_MASK = [
+  "places.id",
+  "places.displayName",
+  "places.formattedAddress",
+  "places.shortFormattedAddress",
+  "places.location",
+  "places.types",
+  "places.rating",
+  "places.userRatingCount",
+  "places.priceLevel",
+].join(",");
+
 function apiKey() {
   return (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "").trim();
 }
@@ -24,11 +37,11 @@ export function hasGooglePlaces() {
   return Boolean(apiKey());
 }
 
-function toPlace(item, theme) {
-  const lat = item.location?.latitude;
-  const lng = item.location?.longitude;
+function toPlace(item, theme, extraTags = []) {
+  const lat = Number(item.location?.latitude);
+  const lng = Number(item.location?.longitude);
   const name = item.displayName?.text;
-  if (lat == null || lng == null || !name) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !name) return null;
 
   const price = PRICE_LABEL[item.priceLevel] || {
     budget: null,
@@ -38,6 +51,7 @@ function toPlace(item, theme) {
     (t) => !t.includes("point_of_interest") && !t.includes("establishment")
   );
   const kind = kinds[0] || theme;
+  const tags = [...kinds.slice(0, 4), ...extraTags].filter(Boolean);
 
   return {
     id: `google-${item.id || `${lat},${lng}`}`,
@@ -52,7 +66,7 @@ function toPlace(item, theme) {
     rating: typeof item.rating === "number" ? item.rating : null,
     ratingCount: item.userRatingCount || 0,
     group: "any",
-    tags: kinds.slice(0, 4),
+    tags,
     blurb: item.rating
       ? `${kind.replace(/_/g, " ")} · ${item.rating.toFixed(1)}★`
       : kind.replace(/_/g, " "),
@@ -61,43 +75,45 @@ function toPlace(item, theme) {
   };
 }
 
-async function searchNearbyByType(state, includedType, key, meters) {
+function parsePlaces(data, theme, extraTags = []) {
+  const seen = new Set();
+  const places = [];
+  for (const item of data.places || []) {
+    const place = toPlace(item, theme, extraTags);
+    if (!place || seen.has(place.name.toLowerCase())) continue;
+    seen.add(place.name.toLowerCase());
+    places.push(place);
+  }
+  return places;
+}
+
+function mergePlaces(...lists) {
+  const seen = new Set();
+  const merged = [];
+  for (const list of lists) {
+    for (const place of list || []) {
+      const key = place.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(place);
+    }
+  }
+  return merged;
+}
+
+async function googlePost(path, key, body, extraTags, theme) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
   try {
-    // Same-origin proxy avoids browser CORS issues in local/dev and Vercel.
-    const res = await fetch("/api/google-places/v1/places:searchNearby", {
+    const res = await fetch(`/api/google-places/v1/places:${path}`, {
       method: "POST",
       signal: ctrl.signal,
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": [
-          "places.id",
-          "places.displayName",
-          "places.formattedAddress",
-          "places.shortFormattedAddress",
-          "places.location",
-          "places.types",
-          "places.rating",
-          "places.userRatingCount",
-          "places.priceLevel",
-        ].join(","),
+        "X-Goog-FieldMask": FIELD_MASK,
       },
-      body: JSON.stringify({
-        includedTypes: [includedType],
-        maxResultCount: 20,
-        rankPreference: "DISTANCE",
-        locationRestriction: {
-          circle: {
-            center: {
-              latitude: state.coords.lat,
-              longitude: state.coords.lng,
-            },
-            radius: meters,
-          },
-        },
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -105,31 +121,58 @@ async function searchNearbyByType(state, includedType, key, meters) {
       throw new Error(`google places ${res.status}${detail ? `: ${detail.slice(0, 180)}` : ""}`);
     }
 
-    const data = await res.json();
-    const seen = new Set();
-    const places = [];
-    for (const item of data.places || []) {
-      const place = toPlace(item, state.theme);
-      if (!place || seen.has(place.name.toLowerCase())) continue;
-      seen.add(place.name.toLowerCase());
-      places.push(place);
-    }
-    return places;
+    return parsePlaces(await res.json(), theme, extraTags);
   } finally {
     clearTimeout(timer);
   }
 }
 
-export async function fetchGoogleNearby(state) {
-  const key = apiKey();
-  if (!key || !state.coords || !state.theme) return [];
+function circle(state, meters) {
+  return {
+    circle: {
+      center: {
+        latitude: state.coords.lat,
+        longitude: state.coords.lng,
+      },
+      radius: meters,
+    },
+  };
+}
 
-  const radiusKm = searchRadiusKm(state);
-  const meters = Math.round(Math.min(Math.max(radiusKm, 0.5), 50) * 1000);
+async function searchText(state, query, key, meters) {
+  return googlePost(
+    "searchText",
+    key,
+    {
+      textQuery: query,
+      languageCode: "en",
+      maxResultCount: 20,
+      rankPreference: "RELEVANCE",
+      locationBias: circle(state, meters),
+    },
+    intentKeywords(state.intent),
+    state.theme
+  );
+}
+
+async function searchNearbyByType(state, includedType, key, meters) {
+  return googlePost(
+    "searchNearby",
+    key,
+    {
+      includedTypes: [includedType],
+      maxResultCount: 20,
+      rankPreference: "DISTANCE",
+      locationRestriction: circle(state, meters),
+    },
+    [],
+    state.theme
+  );
+}
+
+async function fetchNearbyByTheme(state, key, meters) {
   const types = THEME_TYPES[state.theme] || THEME_TYPES.food;
-
   let lastError;
-  // Try primary type first, then one fallback type if empty.
   for (const type of types.slice(0, 2)) {
     try {
       const places = await searchNearbyByType(state, type, key, meters);
@@ -138,7 +181,31 @@ export async function fetchGoogleNearby(state) {
       lastError = err;
     }
   }
-
   if (lastError) throw lastError;
   return [];
+}
+
+export async function fetchGoogleNearby(state) {
+  const key = apiKey();
+  if (!key || !state.coords || !state.theme) return [];
+
+  const radiusKm = searchRadiusKm(state);
+  const meters = Math.round(Math.min(Math.max(radiusKm, 0.5), 50) * 1000);
+  const query = intentQuery(state.intent);
+
+  if (query) {
+    const [textPlaces, nearbyPlaces] = await Promise.all([
+      searchText(state, query, key, meters).catch(() => []),
+      fetchNearbyByTheme(state, key, meters).catch(() => []),
+    ]);
+    const merged = mergePlaces(textPlaces, nearbyPlaces);
+    if (merged.length) return merged;
+    return nearbyPlaces;
+  }
+
+  try {
+    return await fetchNearbyByTheme(state, key, meters);
+  } catch {
+    return [];
+  }
 }

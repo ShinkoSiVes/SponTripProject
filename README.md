@@ -15,7 +15,7 @@ A sponty-trip planner for friends who cannot pick a plan. Answer a short funnel,
 
 Later loops keep the group and pin so you only re-pick vibe, distance, and budget.
 
-Matching prefers live nearby places for the selected vibe (**Google → Foursquare → OpenStreetMap → backup list**), then ranks by optional intent keywords, budget fit, rating, and distance. Radius is the only travel filter. If nothing fits, you can auto-widen the search or pick a different pin.
+Matching prefers live nearby places for the selected vibe (**Google → Foursquare → OpenStreetMap → backup list**). Optional Step 1 detail is sent into Google Text Search and Foursquare query, then used again to rank results. Radius is the only travel filter. The match screen shows the real map. If nothing fits, you can auto-widen the search or pick a different pin.
 
 ## Stack
 
@@ -108,8 +108,9 @@ src/state.js        # state + LocalStorage
 src/groups.js       # Step 2 copy that follows the vibe
 src/places.js       # curated backup places
 src/match.js        # distance + budget + ranking
+src/intent.js       # optional-detail keyword parsing
 src/landmarks.js    # Google + Foursquare + Overpass live POIs
-src/googlePlaces.js # Google Places Nearby Search
+src/googlePlaces.js # Google Text Search + Nearby Search
 src/foursquare.js   # Foursquare Places Nearby Search
 src/geocode.js      # Nominatim search and reverse geocoding
 src/map.js          # Leaflet pin, radius, landmark dots
@@ -120,4 +121,4 @@ vercel.json         # production API rewrites
 
 ## Design
 
-Visuals follow a neubrutalist Stitch kit: neon cyan, electric purple, 2px black borders, hard offset shadows. Inter for headlines, JetBrains Mono for labels, Material Symbols for icons.
+Visuals follow a neubrutalist Stitch kit: pastel teal, pastel blush, 2px black borders, hard offset shadows. Inter for headlines, JetBrains Mono for labels, Material Symbols for icons.

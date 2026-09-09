@@ -1,6 +1,7 @@
 import { PLACES } from "./places.js";
 import { searchRadiusKm } from "./state.js";
 import { distanceKm } from "./match.js";
+import { intentQuery } from "./intent.js";
 import { fetchFoursquareNearby, hasFoursquarePlaces } from "./foursquare.js";
 import { fetchGoogleNearby, hasGooglePlaces } from "./googlePlaces.js";
 
@@ -76,8 +77,9 @@ const KIND_LABEL = {
 
 const cache = new Map();
 
-function cacheKey(coords, radiusKm, theme, source) {
-  return `${source}|${theme}|${coords.lat.toFixed(4)}|${coords.lng.toFixed(4)}|${radiusKm}`;
+function cacheKey(coords, radiusKm, theme, source, intent = "") {
+  const detail = intentQuery(intent) || "-";
+  return `${source}|${theme}|${coords.lat.toFixed(4)}|${coords.lng.toFixed(4)}|${radiusKm}|${detail}`;
 }
 
 function prettyKind(kind) {
@@ -190,7 +192,7 @@ function nearbyBackup(state) {
 
 async function fetchOverpassLandmarks(state) {
   const radiusKm = searchRadiusKm(state);
-  const key = cacheKey(state.coords, radiusKm, state.theme, "osm");
+  const key = cacheKey(state.coords, radiusKm, state.theme, "osm", state.intent);
   if (cache.has(key)) return cache.get(key);
 
   const query = buildQuery(state.coords, radiusKm, state.theme);
@@ -214,7 +216,7 @@ export async function fetchLandmarks(state) {
 
   // Prefer Google Places, then Foursquare, then OSM.
   if (hasGooglePlaces()) {
-    const key = cacheKey(state.coords, radiusKm, state.theme, "google");
+    const key = cacheKey(state.coords, radiusKm, state.theme, "google", state.intent);
     if (cache.has(key)) return cache.get(key);
     try {
       const places = await fetchGoogleNearby(state);
@@ -228,7 +230,7 @@ export async function fetchLandmarks(state) {
   }
 
   if (hasFoursquarePlaces()) {
-    const key = cacheKey(state.coords, radiusKm, state.theme, "foursquare");
+    const key = cacheKey(state.coords, radiusKm, state.theme, "foursquare", state.intent);
     if (cache.has(key)) return cache.get(key);
     try {
       const places = await fetchFoursquareNearby(state);

@@ -9,10 +9,11 @@ import {
   searchRadiusKm,
 } from "./state.js";
 import { findMatch, distanceKm } from "./match.js";
+import { intentKeywords } from "./intent.js";
 import { fetchLandmarks, loadCatalog } from "./landmarks.js";
 import { PLACES } from "./places.js";
 import { reverseLabel, searchLocations } from "./geocode.js";
-import { initMap, setPin, updateCircle, refreshMapSize, setLandmarks, clearLandmarks } from "./map.js";
+import { initMap, setPin, updateCircle, refreshMapSize, setLandmarks, clearLandmarks, focusPlaces } from "./map.js";
 import { groupCopyFor, groupFitsTheme, groupLabel } from "./groups.js";
 import { hasFoursquarePlaces } from "./foursquare.js";
 import { hasGooglePlaces } from "./googlePlaces.js";
@@ -57,8 +58,21 @@ async function refreshLandmarks() {
             ? place.distanceKm
             : distanceKm(state.coords, place),
       }))
-      .sort((a, b) => a.distanceKm - b.distanceKm);
-    setLandmarks(ranked, state.match?.id);
+      .sort((a, b) => {
+        const words = intentKeywords(state.intent);
+        if (words.length) {
+          const hay = (p) => `${p.name} ${p.blurb} ${(p.tags || []).join(" ")}`.toLowerCase();
+          const hits = (p) => words.reduce((n, w) => n + (hay(p).includes(w) ? 1 : 0), 0);
+          const d = hits(b) - hits(a);
+          if (d) return d;
+        }
+        return a.distanceKm - b.distanceKm;
+      });
+    try {
+      setLandmarks(ranked.slice(0, 24), state.match?.id);
+    } catch {
+      // Dots are optional; the list below the map still shows.
+    }
     renderNearbyList(ranked);
     const sourceLabel =
       ranked[0]?.source === "google"
@@ -101,13 +115,13 @@ function renderNearbyList(places) {
       ${top
         .map((place) => {
           const rating =
-            place.rating != null
+            place.rating != null && Number.isFinite(place.rating)
               ? `<span class="nearby-rating">${place.rating.toFixed(1)}★${
                   place.ratingCount ? ` (${place.ratingCount})` : ""
                 }</span>`
               : "";
           const dist =
-            place.distanceKm != null
+            place.distanceKm != null && Number.isFinite(place.distanceKm)
               ? `<span class="nearby-dist">${place.distanceKm.toFixed(1)} km</span>`
               : "";
           return `<li>
@@ -674,18 +688,25 @@ async function autoWidenAndRematch() {
 
 function renderResult() {
   const place = state.match;
-  const box = $("result-card");
+  const copy = $("result-copy");
+  const body = $("result-body");
   const note = $("result-note");
+  const mapWrap = $("result-map-wrap");
+  const caption = $("result-map-caption");
+  const badgeEl = $("result-map-badge");
+  if (!copy || !body) return;
+
   if (!place) {
-    const currentRadius = Number(state.radiusKm) || 8;
     note.textContent = fallbackCopy(state.matchMeta?.fallback);
-    box.innerHTML = `
+    if (mapWrap) mapWrap.classList.add("hidden");
+    copy.innerHTML = "";
+    body.innerHTML = `
       <div class="flex flex-col gap-4 items-stretch text-left">
         <p class="font-body-md text-center">No place could be matched near your pin.</p>
-        <p id="widen-status" class="font-label-sm text-label-sm text-electric-purple text-center uppercase tracking-wider">
-          Current radius: ${currentRadius} km
+        <p id="widen-status" class="font-label-sm text-label-sm text-blush-ink text-center uppercase tracking-wider">
+          Current radius: ${Number(state.radiusKm) || 8} km
         </p>
-        <button id="widen-radius-btn" class="w-full bg-neon-cyan border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-white" type="button">
+        <button id="widen-radius-btn" class="w-full bg-neon-cyan border-2 border-black shadow-[4px_4px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-on-surface" type="button">
           <span class="material-symbols-outlined">zoom_out_map</span>
           Increase radius automatically
         </button>
@@ -699,6 +720,7 @@ function renderResult() {
     $("pick-location-btn").onclick = () => pickDifferentLocation();
     return;
   }
+
   const widenNote =
     state.matchMeta?.autoWidenedTo != null
       ? ` Found after widening to ${state.matchMeta.autoWidenedTo} km.`
@@ -712,23 +734,23 @@ function renderResult() {
   const blurb = escapeHtml(place.blurb || "");
   const area = escapeHtml(place.area || "");
   const cost = escapeHtml(place.costLabel || "Check on the spot");
-  box.innerHTML = `
-    <div class="flex flex-col gap-2 items-center text-center mt-4">
+
+  copy.innerHTML = `
+    <div class="flex flex-col gap-2 items-center text-center mt-1">
       <span class="material-symbols-outlined text-4xl text-neon-cyan" style="font-variation-settings: 'FILL' 1">celebration</span>
       <p class="font-label-bold text-label-bold text-slate-muted uppercase tracking-widest">Matched you with your perfect event</p>
       <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg">${name}</h2>
       <p class="font-body-md text-on-surface-variant">${blurb}</p>
     </div>
-    <div class="w-full h-40 md:h-52 border-2 border-black mt-4 mb-4 bg-electric-purple relative overflow-hidden">
-      <div class="absolute inset-0 flex items-center justify-center">
-        <span class="font-headline-md text-white uppercase tracking-tight">${area}</span>
-      </div>
-      <div class="absolute top-2 left-2 bg-white border-2 border-black px-3 py-1 font-label-bold text-label-bold flex items-center gap-1 shadow-[4px_4px_0_#00FFFF]">
-        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">${badgeIcon}</span>
-        ${badge}
-      </div>
-    </div>
-    <div class="grid grid-cols-2 gap-4 mb-6">
+  `;
+  if (mapWrap) mapWrap.classList.remove("hidden");
+  if (caption) caption.textContent = area || "Matched stop";
+  if (badgeEl) {
+    badgeEl.classList.remove("hidden");
+    badgeEl.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">${badgeIcon}</span>${badge}`;
+  }
+  body.innerHTML = `
+    <div class="grid grid-cols-2 gap-4 mb-4 mt-2">
       <div class="bg-surface border-2 border-black p-3 flex items-center gap-3 shadow-[4px_4px_0_#000]">
         <div class="bg-black text-white p-2 rounded-full flex items-center justify-center">
           <span class="material-symbols-outlined">near_me</span>
@@ -748,7 +770,7 @@ function renderResult() {
         </div>
       </div>
     </div>
-    <a href="${directionsUrl(place)}" target="_blank" rel="noreferrer" class="w-full bg-neon-cyan text-on-surface font-headline-md text-headline-md border-2 border-black py-4 shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white flex justify-center items-center gap-2">
+    <a href="${directionsUrl(place)}" target="_blank" rel="noreferrer" class="w-full bg-neon-cyan text-on-surface font-headline-md text-headline-md border-2 border-black py-4 shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-on-surface flex justify-center items-center gap-2">
       <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">navigation</span>
       Instant Directions
     </a>
@@ -761,6 +783,30 @@ function renderResult() {
   `;
   $("to-loop").onclick = () => go(STEPS.LOOP);
   $("spin-again").onclick = spinAgain;
+}
+
+function showResultMap() {
+  const slot = $("result-map-slot");
+  const mapPanel = $("map-panel");
+  const place = state.match;
+  if (!slot || !mapPanel || !place) return;
+
+  slot.appendChild(mapPanel);
+  mapPanel.classList.remove("hidden");
+  initMap("map", {
+    coords: state.coords || place,
+    radiusKm: searchRadiusKm(state),
+    onSelect: null,
+    showCircle: false,
+  });
+  setLandmarks([place], place.id, { fit: false });
+  const points = [];
+  if (state.coords) points.push(state.coords);
+  if (place.lat != null && place.lng != null) points.push(place);
+  setTimeout(() => {
+    refreshMapSize();
+    focusPlaces(points, 16);
+  }, 50);
 }
 
 function renderItinerary(el, extra) {
@@ -802,6 +848,12 @@ function render() {
   } else if (state.step === STEPS.RADIUS) {
     $("radius-map-slot").appendChild(mapPanel);
     mapPanel.classList.remove("hidden");
+  } else if (state.step === STEPS.RESULT && state.match) {
+    const resultSlot = $("result-map-slot");
+    if (resultSlot) {
+      resultSlot.appendChild(mapPanel);
+      mapPanel.classList.remove("hidden");
+    }
   } else {
     mapPanel.classList.add("hidden");
   }
@@ -844,9 +896,10 @@ function render() {
       coords: state.coords,
       radiusKm: searchRadiusKm(state),
       onSelect: onMapSelect,
+      showCircle: true,
     });
     if (state.step === STEPS.RADIUS && state.coords) {
-      setPin(state.coords, searchRadiusKm(state));
+      setPin(state.coords, searchRadiusKm(state), { showCircle: true });
     }
     setTimeout(refreshMapSize, 50);
     scheduleLandmarkRefresh();
@@ -854,6 +907,7 @@ function render() {
 
   if (state.step === STEPS.RESULT) {
     renderResult();
+    if (state.match) showResultMap();
   }
 
   if (state.step === STEPS.LOOP || state.step === STEPS.THANKS) {

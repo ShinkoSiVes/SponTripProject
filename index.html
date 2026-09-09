@@ -27,8 +27,9 @@
         theme: {
           extend: {
             colors: {
-              "neon-cyan": "#00FFFF",
-              "electric-purple": "#9D00FF",
+              "neon-cyan": "#A8E4DC",
+              "electric-purple": "#E8B5AB",
+              "blush-ink": "#B45A52",
               "border-black": "#000000",
               "slate-dark": "#111827",
               "slate-muted": "#1F2937",
@@ -106,7 +107,7 @@
           </div>
           <h1 class="font-headline-xl text-headline-xl text-border-black mb-unit uppercase tracking-tighter">SPONTRIP</h1>
           <p class="font-body-lg text-body-lg text-slate-muted mb-margin-lg max-w-xs mx-auto">Turn indecision into instant plans.</p>
-          <button id="start-btn" class="bg-neon-cyan text-on-surface font-label-bold text-label-bold py-4 px-12 uppercase w-full max-w-sm flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-none active:translate-x-1 active:translate-y-1" type="button">
+          <button id="start-btn" class="bg-neon-cyan text-on-surface font-label-bold text-label-bold py-4 px-12 uppercase w-full max-w-sm flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0_#000] hover:shadow-[6px_6px_0_#E8B5AB] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-none active:translate-x-1 active:translate-y-1" type="button">
             Start Sponty Trip
             <span class="material-symbols-outlined">arrow_forward</span>
           </button>
@@ -115,11 +116,11 @@
 
       <section id="screen-intent" class="screen flex-grow flex flex-col items-center justify-start p-gutter pb-28 overflow-y-auto">
         <div class="w-full max-w-4xl">
-          <p id="baseline-note" class="hidden font-label-sm text-label-sm text-electric-purple uppercase tracking-wider mb-margin-sm text-center"></p>
+          <p id="baseline-note" class="hidden font-label-sm text-label-sm text-blush-ink uppercase tracking-wider mb-margin-sm text-center"></p>
           <div class="mb-margin-sm text-center">
             <span class="font-label-bold text-label-bold bg-black text-white px-2 py-1 inline-block mb-3">Step 1</span>
             <h2 class="font-headline-lg text-headline-lg md:font-headline-xl md:text-headline-xl mb-unit">What do you want to do?</h2>
-            <p class="font-body-lg text-body-lg text-on-surface-variant">Pick a vibe for your area. Tap a card to open it.</p>
+            <p class="font-body-lg text-body-lg text-on-surface-variant">Pick a vibe for your area. Optional detail is used in the nearby search.</p>
           </div>
           <div class="theme-grid">
             <button type="button" class="theme-card" data-theme="food" aria-pressed="false">
@@ -207,17 +208,17 @@
               <input id="place-search" class="w-full bg-white border-2 border-black p-3 font-body-md outline-none focus:border-neon-cyan" placeholder="Search your city, district, or landmark..." type="search" autocomplete="off" />
               <ul id="place-search-results" class="place-search-results hidden" role="listbox"></ul>
             </div>
-            <button id="geo-btn" class="self-stretch sm:self-start bg-white border-2 border-black px-4 py-3 font-label-bold text-label-bold shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white whitespace-nowrap" type="button">Use my location</button>
+            <button id="geo-btn" class="self-stretch sm:self-start bg-white border-2 border-black px-4 py-3 font-label-bold text-label-bold shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-on-surface whitespace-nowrap" type="button">Use my location</button>
           </div>
           <div id="map-slot" class="w-full aspect-square md:aspect-video border-2 border-black overflow-hidden bg-surface-container cursor-crosshair"></div>
           <div id="nearby-list" class="nearby-list hidden"></div>
           <div class="border-t-2 border-black pt-gutter flex flex-col gap-unit">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Selected Anchor</span>
             <div class="flex items-center gap-gutter bg-surface-container-low p-3 border border-black border-dashed">
-              <span class="material-symbols-outlined text-electric-purple">map</span>
+              <span class="material-symbols-outlined text-blush-ink">map</span>
               <span id="location-label" class="font-body-md text-body-md font-bold">No pin yet. Tap the map.</span>
             </div>
-            <p id="landmark-status" class="font-label-sm text-label-sm text-electric-purple"></p>
+            <p id="landmark-status" class="font-label-sm text-label-sm text-blush-ink"></p>
           </div>
         </div>
       </section>
@@ -225,7 +226,7 @@
       <section id="screen-radius" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-28 overflow-y-auto">
         <div class="w-full max-w-[640px] bg-white border-2 border-black p-margin-md relative">
           <div class="absolute inset-0 bg-neon-cyan translate-x-1 translate-y-1 -z-10 border-2 border-black hidden md:block"></div>
-          <div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-white border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">Step 4</div>
+          <div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-on-surface border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">Step 4</div>
           <div class="flex flex-col gap-margin-md mt-4">
             <div class="screen-photo-strip compact" aria-hidden="true">
               <img src="/themes/activities-1.jpg" alt="" />
@@ -250,7 +251,7 @@
                 <span>80 km (Adventure)</span>
               </div>
               <p id="radius-location" class="font-label-sm text-label-sm text-on-surface-variant">No pin yet</p>
-              <p id="radius-landmark-status" class="font-label-sm text-label-sm text-electric-purple"></p>
+              <p id="radius-landmark-status" class="font-label-sm text-label-sm text-blush-ink"></p>
             </div>
             <div id="radius-map-slot" class="w-full h-56 border-2 border-black overflow-hidden"></div>
           </div>
@@ -260,7 +261,7 @@
       <section id="screen-budget" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:px-margin-lg pb-28">
         <div class="w-full max-w-2xl">
           <div class="mb-margin-md text-center">
-            <span class="font-label-bold text-label-bold text-electric-purple uppercase tracking-widest mb-2 block">Step 5</span>
+            <span class="font-label-bold text-label-bold text-blush-ink uppercase tracking-widest mb-2 block">Step 5</span>
             <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black">How much are you willing to spend?</h2>
             <p class="font-body-md text-body-md text-on-surface-variant mt-2">We prioritize your pick, then stretch one tier up if needed (Budget can also include Moderate).</p>
           </div>
@@ -293,9 +294,17 @@
         </div>
       </section>
 
-      <section id="screen-result" class="screen flex-grow flex flex-col items-center justify-center p-gutter pb-12">
-        <p id="result-note" class="font-label-sm text-label-sm text-electric-purple uppercase tracking-wider mb-4 text-center"></p>
-        <div id="result-card" class="bg-white border-2 border-black p-gutter w-full max-w-2xl flex flex-col gap-unit shadow-[8px_8px_0_#000]"></div>
+      <section id="screen-result" class="screen flex-grow flex flex-col items-center justify-start p-gutter pb-12 overflow-y-auto">
+        <p id="result-note" class="font-label-sm text-label-sm text-blush-ink uppercase tracking-wider mb-4 text-center"></p>
+        <div id="result-card" class="bg-white border-2 border-black p-gutter w-full max-w-2xl flex flex-col gap-unit shadow-[8px_8px_0_#000]">
+          <div id="result-copy"></div>
+          <div id="result-map-wrap" class="result-map-wrap hidden">
+            <div id="result-map-slot"></div>
+            <div id="result-map-badge" class="result-map-badge hidden"></div>
+            <p id="result-map-caption" class="result-map-caption"></p>
+          </div>
+          <div id="result-body"></div>
+        </div>
       </section>
 
       <section id="screen-loop" class="screen flex-grow flex items-center justify-center p-gutter md:p-margin-lg">
@@ -309,7 +318,7 @@
           <h2 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl uppercase tracking-tighter">Do you want to keep the sponty trip going?</h2>
           <div id="loop-itinerary"></div>
           <div class="flex flex-col gap-gutter">
-            <button id="keep-yes" class="w-full bg-neon-cyan border-2 border-black shadow-[6px_6px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-white" type="button">
+            <button id="keep-yes" class="w-full bg-neon-cyan border-2 border-black shadow-[6px_6px_0_#000] font-label-bold text-label-bold uppercase py-4 px-6 flex justify-center items-center gap-2 hover:bg-electric-purple hover:text-on-surface" type="button">
               <span class="material-symbols-outlined">add_circle</span>
               YES! Add another activity
             </button>
@@ -322,10 +331,10 @@
       </section>
 
       <section id="screen-thanks" class="screen flex-grow flex flex-col items-center justify-center p-gutter text-center gap-margin-md">
-        <div class="w-full max-w-3xl aspect-[21/9] max-h-64 border-4 border-black shadow-[16px_16px_0_#00FFFF] overflow-hidden bg-electric-purple flex items-center justify-center">
-          <span class="material-symbols-outlined text-[8rem] text-white" style="font-variation-settings: 'FILL' 1">celebration</span>
+        <div class="w-full max-w-3xl aspect-[21/9] max-h-64 border-4 border-black shadow-[16px_16px_0_#A8E4DC] overflow-hidden bg-electric-purple flex items-center justify-center">
+          <span class="material-symbols-outlined text-[8rem] text-on-surface" style="font-variation-settings: 'FILL' 1">celebration</span>
         </div>
-        <h2 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl max-w-2xl bg-white border-2 border-black p-gutter shadow-[8px_8px_0_#9D00FF]">
+        <h2 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl max-w-2xl bg-white border-2 border-black p-gutter shadow-[8px_8px_0_#E8B5AB]">
           Thank you for using Spontrip, enjoy your sponty trip!
         </h2>
         <div id="final-itinerary" class="w-full max-w-xl text-left"></div>
@@ -341,11 +350,11 @@
 
     <footer id="footer" class="hidden fixed bottom-0 w-full z-50 bg-white border-t-2 border-black">
       <div class="flex justify-between items-center p-gutter gap-gutter max-w-7xl mx-auto">
-        <button id="back-btn" class="flex items-center gap-2 px-4 py-3 bg-white border-2 border-black shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white font-label-bold text-label-bold flex-1 justify-center" type="button">
+        <button id="back-btn" class="flex items-center gap-2 px-4 py-3 bg-white border-2 border-black shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-on-surface font-label-bold text-label-bold flex-1 justify-center" type="button">
           <span class="material-symbols-outlined">chevron_left</span>
           Back
         </button>
-        <button id="next-btn" class="flex items-center gap-2 px-4 py-3 bg-neon-cyan text-on-primary-container border-2 border-black shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white font-label-bold text-label-bold flex-1 justify-center" type="button">
+        <button id="next-btn" class="flex items-center gap-2 px-4 py-3 bg-neon-cyan text-on-primary-container border-2 border-black shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-on-surface font-label-bold text-label-bold flex-1 justify-center" type="button">
           <span id="next-label">Next</span>
           <span class="material-symbols-outlined">chevron_right</span>
         </button>

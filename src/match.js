@@ -1,5 +1,6 @@
 import { PLACES } from "./places.js";
 import { searchRadiusKm } from "./state.js";
+import { intentKeywords } from "./intent.js";
 
 const EARTH_KM = 6371;
 
@@ -62,13 +63,10 @@ function budgetScore(place, budget, budgetMax) {
 }
 
 function intentScore(place, intent) {
-  if (!intent) return 0;
+  const words = intentKeywords(intent);
+  if (!words.length) return 0;
   const hay = `${place.name} ${place.blurb} ${(place.tags || []).join(" ")} ${place.area}`.toLowerCase();
-  return intent
-    .toLowerCase()
-    .split(/\W+/)
-    .filter((w) => w.length > 2)
-    .reduce((score, word) => score + (hay.includes(word) ? 1 : 0), 0);
+  return words.reduce((score, word) => score + (hay.includes(word) ? 1 : 0), 0);
 }
 
 function withinRadius(place, km) {
@@ -95,9 +93,9 @@ export function findMatch(state, catalog = PLACES) {
       budgetHits: budgetScore(place, state.budget, state.budgetMax),
     }))
     .sort((a, b) => {
-      // Prefer places inside the chosen budget first, then stretch options.
-      if (b.budgetHits !== a.budgetHits) return b.budgetHits - a.budgetHits;
+      // Optional detail wins when it matches a place name/tag.
       if (b.intentHits !== a.intentHits) return b.intentHits - a.intentHits;
+      if (b.budgetHits !== a.budgetHits) return b.budgetHits - a.budgetHits;
       const ratingA = a.rating ?? 0;
       const ratingB = b.rating ?? 0;
       if (ratingB !== ratingA) return ratingB - ratingA;
@@ -121,15 +119,13 @@ export function findMatch(state, catalog = PLACES) {
     };
   }
 
-  const loose = closestFirst(
-    scored.filter((p) => p.theme === state.theme && withinRadius(p, radius * 2))
-  );
+  const loose = scored.filter((p) => p.theme === state.theme && withinRadius(p, radius * 2));
 
   if (loose.length) {
     return { place: loose[0], fallback: "widened", alternatives: loose.slice(1, 3) };
   }
 
-  const anyNearby = closestFirst(scored.filter((p) => withinRadius(p, radius * 3)));
+  const anyNearby = scored.filter((p) => withinRadius(p, radius * 3));
   if (anyNearby.length) {
     return { place: anyNearby[0], fallback: "any-nearby", alternatives: anyNearby.slice(1, 3) };
   }
