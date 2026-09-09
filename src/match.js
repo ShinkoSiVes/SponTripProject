@@ -1,4 +1,5 @@
 import { PLACES } from "./places.js";
+import { searchRadiusKm } from "./state.js";
 
 const EARTH_KM = 6371;
 
@@ -26,17 +27,19 @@ function groupFits(place, groupSize) {
 }
 
 function budgetFits(place, budget, budgetMax) {
-  if (budgetMax != null && Number.isFinite(budgetMax)) {
+  if (place.costPhp == null && !place.budget) return true;
+  if (budgetMax != null && Number.isFinite(budgetMax) && place.costPhp != null) {
     return place.costPhp <= budgetMax;
   }
   if (!budget) return true;
+  if (!place.budget) return true;
   const rank = { budget: 1, moderate: 2, splurge: 3 };
   return rank[place.budget] <= rank[budget];
 }
 
 function intentScore(place, intent) {
   if (!intent) return 0;
-  const hay = `${place.name} ${place.blurb} ${place.tags.join(" ")} ${place.area}`.toLowerCase();
+  const hay = `${place.name} ${place.blurb} ${(place.tags || []).join(" ")} ${place.area}`.toLowerCase();
   return intent
     .toLowerCase()
     .split(/\W+/)
@@ -44,9 +47,12 @@ function intentScore(place, intent) {
     .reduce((score, word) => score + (hay.includes(word) ? 1 : 0), 0);
 }
 
-function effectiveRadius(state) {
-  if (state.transitMode === "walk") return Math.min(state.radiusKm, 4);
-  return state.radiusKm;
+function withinRadius(place, km) {
+  return place.distanceKm <= km + 0.05;
+}
+
+function closestFirst(places) {
+  return [...places].sort((a, b) => a.distanceKm - b.distanceKm);
 }
 
 export function findMatch(state, catalog = PLACES) {
@@ -55,7 +61,7 @@ export function findMatch(state, catalog = PLACES) {
   }
 
   const origin = state.coords;
-  const radius = effectiveRadius(state);
+  const radius = searchRadiusKm(state);
 
   const scored = catalog
     .map((place) => ({
@@ -65,14 +71,16 @@ export function findMatch(state, catalog = PLACES) {
     }))
     .sort((a, b) => {
       if (b.intentHits !== a.intentHits) return b.intentHits - a.intentHits;
-      if (b.rating !== a.rating) return b.rating - a.rating;
+      const ratingA = a.rating ?? 0;
+      const ratingB = b.rating ?? 0;
+      if (ratingB !== ratingA) return ratingB - ratingA;
       return a.distanceKm - b.distanceKm;
     });
 
   const exact = scored.filter(
     (p) =>
       p.theme === state.theme &&
-      p.distanceKm <= radius &&
+      withinRadius(p, radius) &&
       groupFits(p, state.groupSize) &&
       budgetFits(p, state.budget, state.budgetMax) &&
       (state.transitMode !== "walk" || p.walkable)
@@ -82,21 +90,28 @@ export function findMatch(state, catalog = PLACES) {
     return { place: exact[0], fallback: null, alternatives: exact.slice(1, 3) };
   }
 
-  const loose = scored.filter(
-    (p) =>
-      p.theme === state.theme &&
-      p.distanceKm <= Math.max(radius * 2, 15) &&
-      (state.transitMode !== "walk" || p.walkable)
+  const loose = closestFirst(
+    scored.filter(
+      (p) =>
+        p.theme === state.theme &&
+        withinRadius(p, radius * 2) &&
+        (state.transitMode !== "walk" || p.walkable)
+    )
   );
 
   if (loose.length) {
     return { place: loose[0], fallback: "widened", alternatives: loose.slice(1, 3) };
   }
 
-  const anyNearby = scored.filter((p) => p.distanceKm <= Math.max(radius * 3, 25));
+  const anyNearby = closestFirst(
+    scored.filter(
+      (p) =>
+        withinRadius(p, radius * 3) && (state.transitMode !== "walk" || p.walkable)
+    )
+  );
   if (anyNearby.length) {
     return { place: anyNearby[0], fallback: "any-nearby", alternatives: anyNearby.slice(1, 3) };
   }
 
-  return { place: scored[0] ?? null, fallback: "best-effort", alternatives: scored.slice(1, 3) };
+  return { place: null, fallback: "empty", alternatives: [] };
 }

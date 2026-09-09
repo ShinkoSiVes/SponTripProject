@@ -3,12 +3,15 @@ const MAKATI = [14.5547, 121.0244];
 let map;
 let marker;
 let circle;
+let poiLayer;
 let onPin;
+let activeRadiusKm = 8;
 
 export function initMap(containerId, { coords, radiusKm, onSelect }) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
+  activeRadiusKm = radiusKm;
   onPin = onSelect;
 
   if (map) {
@@ -24,9 +27,11 @@ export function initMap(containerId, { coords, radiusKm, onSelect }) {
     attribution: "&copy; OpenStreetMap",
   }).addTo(map);
 
+  poiLayer = L.layerGroup().addTo(map);
+
   map.on("click", (event) => {
     const next = { lat: event.latlng.lat, lng: event.latlng.lng };
-    setPin(next, radiusKm);
+    setPin(next, activeRadiusKm);
     if (onPin) onPin(next);
   });
 
@@ -36,6 +41,7 @@ export function initMap(containerId, { coords, radiusKm, onSelect }) {
 
 export function setPin(coords, radiusKm) {
   if (!map) return;
+  if (radiusKm != null) activeRadiusKm = radiusKm;
 
   if (!coords) {
     if (marker) {
@@ -56,14 +62,14 @@ export function setPin(coords, radiusKm) {
     marker.on("dragend", () => {
       const pos = marker.getLatLng();
       const next = { lat: pos.lat, lng: pos.lng };
-      updateCircle(next, radiusKm);
+      updateCircle(next, activeRadiusKm);
       if (onPin) onPin(next);
     });
   } else {
     marker.setLatLng(latlng);
   }
 
-  updateCircle(coords, radiusKm);
+  updateCircle(coords, activeRadiusKm);
   map.panTo(latlng);
 }
 
@@ -89,11 +95,36 @@ export function refreshMapSize() {
   if (map) map.invalidateSize();
 }
 
+export function setLandmarks(places, highlightId) {
+  if (!map) return;
+  if (!poiLayer) poiLayer = L.layerGroup().addTo(map);
+  poiLayer.clearLayers();
+  (places || []).forEach((place) => {
+    const picked = place.id === highlightId;
+    const dot = L.circleMarker([place.lat, place.lng], {
+      radius: picked ? 10 : 7,
+      color: "#000000",
+      weight: 2,
+      fillColor: picked ? "#9D00FF" : "#00FFFF",
+      fillOpacity: 0.92,
+    });
+    dot.bindTooltip(place.name, { direction: "top", offset: [0, -8] });
+    poiLayer.addLayer(dot);
+  });
+  poiLayer.bringToFront();
+  if (marker) marker.bringToFront();
+}
+
+export function clearLandmarks() {
+  if (poiLayer) poiLayer.clearLayers();
+}
+
 export function destroyMap() {
   if (map) {
     map.remove();
     map = null;
     marker = null;
     circle = null;
+    poiLayer = null;
   }
 }

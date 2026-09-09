@@ -86,7 +86,7 @@
           <span class="material-symbols-outlined text-on-surface-variant">arrow_back</span>
         </button>
         <div class="font-headline-md text-headline-md font-black text-on-surface">Spontrip</div>
-        <div id="progress-label" class="font-label-bold text-label-bold text-on-surface-variant">Step 1 of 8</div>
+        <div id="progress-label" class="font-label-bold text-label-bold text-on-surface-variant">Step 1 of 5</div>
       </div>
     </header>
 
@@ -108,80 +108,97 @@
         </div>
       </section>
 
-      <section id="screen-intent" class="screen flex-grow flex items-center justify-center p-gutter md:p-margin-md pb-28">
-        <div class="bg-white border-2 border-black w-full max-w-2xl mx-auto p-margin-md md:p-margin-lg relative">
-          <span class="absolute top-4 left-4 font-label-bold text-label-bold bg-black text-white px-2 py-1">Step 1</span>
-          <div class="mt-8">
-            <p id="baseline-note" class="hidden font-label-sm text-label-sm text-electric-purple uppercase tracking-wider mb-margin-sm"></p>
-            <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-margin-sm">What do you want to do?</h2>
-            <p class="font-body-lg text-body-lg text-on-surface-variant mb-margin-md">Enter a custom idea or pick from our quick suggestions.</p>
-            <input id="intent-input" class="w-full bg-white border border-black p-4 font-body-lg text-body-lg outline-none focus:border-neon-cyan focus:border-2 mb-margin-lg" placeholder="e.g. Find a quiet cafe to read..." type="text" />
-            <h3 class="font-label-bold text-label-bold text-slate-muted mb-3">Quick Ideas</h3>
-            <div class="flex flex-wrap gap-3">
-              <button type="button" data-intent="Eat something" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Eat something</button>
-              <button type="button" data-intent="Go somewhere" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Go somewhere</button>
-              <button type="button" data-intent="Hang out" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Hang out</button>
-              <button type="button" data-intent="Be active" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Be active</button>
-              <button type="button" data-intent="Learn something new" class="bg-white border border-black px-4 py-2 font-body-md hover:bg-surface-container">Learn something new</button>
-            </div>
+      <section id="screen-intent" class="screen flex-grow flex flex-col items-center justify-start p-gutter pb-28 overflow-y-auto">
+        <div class="w-full max-w-4xl">
+          <p id="baseline-note" class="hidden font-label-sm text-label-sm text-electric-purple uppercase tracking-wider mb-margin-sm text-center"></p>
+          <div class="mb-margin-sm text-center">
+            <span class="font-label-bold text-label-bold bg-black text-white px-2 py-1 inline-block mb-3">Step 1</span>
+            <h2 class="font-headline-lg text-headline-lg md:font-headline-xl md:text-headline-xl mb-unit">What do you want to do?</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant">Pick a vibe for your area. Tap a card to open it.</p>
           </div>
+          <div class="theme-grid">
+            <button type="button" class="theme-card" data-theme="food" aria-pressed="false">
+              <div class="theme-card-stage">
+                <div class="theme-card-track">
+                  <img src="/themes/food-1.jpg" alt="Shared plates on a table" width="800" height="500" />
+                  <img src="/themes/food-2.jpg" alt="Restaurant dinner" width="800" height="500" />
+                  <img src="/themes/food-3.jpg" alt="Pasta and wine" width="800" height="500" />
+                </div>
+              </div>
+              <span class="theme-card-copy">
+                <span class="theme-card-kicker">Kainan</span>
+                <span class="theme-card-title">Food</span>
+              </span>
+            </button>
+            <button type="button" class="theme-card" data-theme="date" aria-pressed="false">
+              <div class="theme-card-stage">
+                <div class="theme-card-track">
+                  <img src="/themes/date-1.jpg" alt="Dim restaurant for two" width="800" height="500" />
+                  <img src="/themes/date-2.jpg" alt="Cafe counter" width="800" height="500" />
+                  <img src="/themes/date-3.jpg" alt="Evening drinks" width="800" height="500" />
+                </div>
+              </div>
+              <span class="theme-card-copy">
+                <span class="theme-card-kicker">Just the two of you</span>
+                <span class="theme-card-title">Date</span>
+              </span>
+            </button>
+            <button type="button" class="theme-card" data-theme="activities" aria-pressed="false">
+              <div class="theme-card-stage">
+                <div class="theme-card-track">
+                  <img src="/themes/activities-1.jpg" alt="Outdoor trail" width="800" height="500" />
+                  <img src="/themes/activities-2.jpg" alt="Kayak on water" width="800" height="500" />
+                  <img src="/themes/activities-3.jpg" alt="City evening walk" width="800" height="500" />
+                </div>
+              </div>
+              <span class="theme-card-copy">
+                <span class="theme-card-kicker">Gala</span>
+                <span class="theme-card-title">Activities</span>
+              </span>
+            </button>
+            <button type="button" class="theme-card" data-theme="entertainment" aria-pressed="false">
+              <div class="theme-card-stage">
+                <div class="theme-card-track">
+                  <img src="/themes/entertainment-1.jpg" alt="Concert crowd" width="800" height="500" />
+                  <img src="/themes/entertainment-2.jpg" alt="Cinema seats" width="800" height="500" />
+                  <img src="/themes/entertainment-3.jpg" alt="Arcade games" width="800" height="500" />
+                </div>
+              </div>
+              <span class="theme-card-copy">
+                <span class="theme-card-kicker">Gimmick</span>
+                <span class="theme-card-title">Entertainment</span>
+              </span>
+            </button>
+          </div>
+          <label class="block mt-margin-md">
+            <span class="font-label-bold text-label-bold text-slate-muted uppercase tracking-wider">Optional detail</span>
+            <input id="intent-input" class="mt-2 w-full bg-white border-2 border-black p-4 font-body-lg text-body-lg outline-none focus:border-neon-cyan" placeholder="e.g. quiet cafe, karaoke, riverside walk" type="text" />
+          </label>
         </div>
       </section>
 
       <section id="screen-group" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-lg pb-28">
         <div class="bg-white border-2 border-black p-margin-md w-full max-w-2xl shadow-[4px_4px_0_#000]">
-          <div class="font-label-bold text-label-bold mb-margin-sm text-slate-muted">GROUP SIZE</div>
-          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-margin-md">How many will be going?</h2>
-          <div class="flex flex-col gap-gutter">
-            <button type="button" data-group="1" class="w-full py-4 px-6 flex items-center gap-gutter border border-black bg-white hover:bg-surface-container text-left">
-              <span class="material-symbols-outlined text-2xl">person</span>
-              <span class="font-body-lg text-body-lg">Solo</span>
-            </button>
-            <button type="button" data-group="2-4" class="w-full py-4 px-6 flex items-center gap-gutter border border-black bg-white hover:bg-surface-container text-left">
-              <span class="material-symbols-outlined text-2xl">group</span>
-              <span class="font-body-lg text-body-lg">2-4 Friends</span>
-            </button>
-            <button type="button" data-group="5+" class="w-full py-4 px-6 flex items-center gap-gutter border border-black bg-white hover:bg-surface-container text-left">
-              <span class="material-symbols-outlined text-2xl">groups</span>
-              <span class="font-body-lg text-body-lg">5+ Squad</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section id="screen-theme" class="screen flex-grow flex flex-col items-center justify-center p-gutter pb-28">
-        <div class="w-full max-w-4xl">
-          <div class="mb-margin-md text-center">
-            <h2 class="font-headline-lg text-headline-lg md:font-headline-xl md:text-headline-xl mb-unit">What's the vibe?</h2>
-            <p class="font-body-lg text-body-lg text-on-surface-variant">Select a theme for your spontaneous adventure.</p>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-card-gap">
-            <button type="button" data-theme="food" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
-              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">restaurant</span>
-              <span class="font-headline-md text-headline-md font-bold">Food &amp; Eats</span>
-            </button>
-            <button type="button" data-theme="trips" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
-              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">directions_car</span>
-              <span class="font-headline-md text-headline-md font-bold">Short Trips</span>
-            </button>
-            <button type="button" data-theme="travel" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
-              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">flight</span>
-              <span class="font-headline-md text-headline-md font-bold">Off Country</span>
-            </button>
-            <button type="button" data-theme="entertainment" class="bg-white border-2 border-black p-margin-sm flex flex-col items-center justify-center gap-margin-sm min-h-[200px] shadow-[4px_4px_0_#000] hover:bg-electric-purple hover:text-white hover:shadow-[8px_8px_0_#9D00FF] hover:-translate-x-1 hover:-translate-y-1">
-              <span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1">sports_esports</span>
-              <span class="font-headline-md text-headline-md font-bold">Entertainment</span>
-            </button>
-          </div>
+          <div id="group-kicker" class="font-label-bold text-label-bold mb-margin-sm text-slate-muted">WHO'S COMING</div>
+          <h2 id="group-heading" class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2">How many will be going?</h2>
+          <p id="group-sub" class="font-body-md text-body-md text-on-surface-variant mb-margin-md">Pick the size of the group.</p>
+          <div id="group-options" class="flex flex-col gap-gutter"></div>
         </div>
       </section>
 
       <section id="screen-map" class="screen flex-grow flex flex-col items-center px-gutter py-margin-md pb-28">
         <div class="w-full max-w-4xl bg-white border-2 border-black p-gutter flex flex-col gap-gutter shadow-[8px_8px_0_#000]">
-          <span class="font-label-bold text-label-bold bg-black text-white px-2 py-1 inline-block self-start uppercase tracking-widest">Step 4</span>
+          <span class="font-label-bold text-label-bold bg-black text-white px-2 py-1 inline-block self-start uppercase tracking-widest">Step 3</span>
           <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg">Pick your anchor location</h2>
-          <p class="font-body-lg text-body-lg text-on-surface-variant">Tap the map to drop a pin. We'll build your spontaneous itinerary around this spot.</p>
-          <button id="geo-btn" class="self-start bg-white border-2 border-black px-4 py-2 font-label-bold text-label-bold shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white" type="button">Use my location</button>
+          <p class="font-body-lg text-body-lg text-on-surface-variant">Search a spot, use your location, or tap the map to drop a pin. Cyan dots are real nearby places for your vibe.</p>
+          <div class="flex flex-col sm:flex-row gap-gutter">
+            <div class="place-search relative flex-1">
+              <label class="sr-only" for="place-search">Search a location</label>
+              <input id="place-search" class="w-full bg-white border-2 border-black p-3 font-body-md outline-none focus:border-neon-cyan" placeholder="Search your city, district, or landmark..." type="search" autocomplete="off" />
+              <ul id="place-search-results" class="place-search-results hidden" role="listbox"></ul>
+            </div>
+            <button id="geo-btn" class="self-stretch sm:self-start bg-white border-2 border-black px-4 py-3 font-label-bold text-label-bold shadow-[2px_2px_0_#000] hover:bg-electric-purple hover:text-white whitespace-nowrap" type="button">Use my location</button>
+          </div>
           <div id="map-slot" class="w-full aspect-square md:aspect-video border-2 border-black overflow-hidden bg-surface-container cursor-crosshair"></div>
           <div class="border-t-2 border-black pt-gutter flex flex-col gap-unit">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Selected Anchor</span>
@@ -189,19 +206,31 @@
               <span class="material-symbols-outlined text-electric-purple">map</span>
               <span id="location-label" class="font-body-md text-body-md font-bold">No pin yet. Tap the map.</span>
             </div>
+            <p id="landmark-status" class="font-label-sm text-label-sm text-electric-purple"></p>
           </div>
         </div>
       </section>
 
-      <section id="screen-radius" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-28">
-        <div class="w-full max-w-[600px] bg-white border-2 border-black p-margin-md relative">
+      <section id="screen-radius" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-28 overflow-y-auto">
+        <div class="w-full max-w-[640px] bg-white border-2 border-black p-margin-md relative">
           <div class="absolute inset-0 bg-neon-cyan translate-x-1 translate-y-1 -z-10 border-2 border-black hidden md:block"></div>
-          <div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-white border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">Step 5</div>
+          <div class="absolute -top-[12px] -left-[2px] bg-electric-purple text-white border-2 border-black px-2 py-1 font-label-sm text-label-sm uppercase">Step 4</div>
           <div class="flex flex-col gap-margin-md mt-4">
             <div class="text-center">
-              <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black mb-unit">How far are you willing to travel?</h2>
-              <p class="font-body-md text-body-md text-on-surface-variant">Set your maximum exploration radius.</p>
+              <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black mb-unit">How will you get around?</h2>
+              <p class="font-body-md text-body-md text-on-surface-variant">Pick walking or a vehicle, then set how far you will go.</p>
             </div>
+            <div class="grid grid-cols-2 gap-gutter">
+              <button type="button" data-transit="walk" class="bg-white border-2 border-black p-4 flex flex-col items-center justify-center gap-2 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
+                <span class="material-symbols-outlined text-5xl leading-none">directions_walk</span>
+                <span class="font-headline-md text-headline-md">Walking</span>
+              </button>
+              <button type="button" data-transit="vehicle" class="bg-white border-2 border-black p-4 flex flex-col items-center justify-center gap-2 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
+                <span class="material-symbols-outlined text-5xl leading-none">directions_car</span>
+                <span class="font-headline-md text-headline-md">Vehicle</span>
+              </button>
+            </div>
+            <p id="walk-cap-note" class="hidden font-label-sm text-label-sm text-electric-purple uppercase tracking-wider text-center">Walking caps the search at 4 km.</p>
             <div class="flex flex-col gap-gutter bg-surface p-gutter border-2 border-black">
               <div class="flex justify-between items-end">
                 <span class="font-label-bold text-label-bold text-on-surface-variant">Distance</span>
@@ -216,6 +245,7 @@
                 <span>80 km (Adventure)</span>
               </div>
               <p id="radius-location" class="font-label-sm text-label-sm text-on-surface-variant">No pin yet</p>
+              <p id="radius-landmark-status" class="font-label-sm text-label-sm text-electric-purple"></p>
             </div>
             <div id="radius-map-slot" class="w-full h-56 border-2 border-black overflow-hidden"></div>
           </div>
@@ -225,7 +255,7 @@
       <section id="screen-budget" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:px-margin-lg pb-28">
         <div class="w-full max-w-2xl">
           <div class="mb-margin-md text-center">
-            <span class="font-label-bold text-label-bold text-electric-purple uppercase tracking-widest mb-2 block">Step 6</span>
+            <span class="font-label-bold text-label-bold text-electric-purple uppercase tracking-widest mb-2 block">Step 5</span>
             <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black">How much are you willing to spend?</h2>
             <p class="font-body-md text-body-md text-on-surface-variant mt-2">Select a budget tier for your spontaneous getaway.</p>
           </div>
@@ -250,25 +280,6 @@
             Or max pesos per person
             <input id="budget-max" class="mt-2 w-full bg-white border border-black p-3 font-body-md outline-none focus:border-neon-cyan" type="number" min="0" step="50" placeholder="e.g. 800" />
           </label>
-        </div>
-      </section>
-
-      <section id="screen-transit" class="screen flex-grow flex flex-col items-center justify-center p-gutter md:p-margin-md pb-28">
-        <div class="w-full max-w-3xl flex flex-col gap-margin-md">
-          <div class="text-center">
-            <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-unit">Walking or Vehicle?</h2>
-            <p class="font-body-md text-body-md text-on-surface-variant">Select your preferred mode of transit for this trip.</p>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-card-gap">
-            <button type="button" data-transit="walk" class="bg-white border-2 border-black p-margin-md flex flex-col items-center justify-center gap-4 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
-              <span class="material-symbols-outlined text-[64px] leading-none">directions_walk</span>
-              <span class="font-headline-md text-headline-md">Walking</span>
-            </button>
-            <button type="button" data-transit="vehicle" class="bg-white border-2 border-black p-margin-md flex flex-col items-center justify-center gap-4 shadow-[2px_2px_0_#000] hover:shadow-[6px_6px_0_#9D00FF] hover:-translate-x-0.5 hover:-translate-y-0.5">
-              <span class="material-symbols-outlined text-[64px] leading-none">directions_car</span>
-              <span class="font-headline-md text-headline-md">Vehicle</span>
-            </button>
-          </div>
         </div>
       </section>
 

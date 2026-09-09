@@ -1,9 +1,50 @@
 /* Stitch "Vivid Logic" extras. Tailwind CDN handles layout tokens. */
 
+:root {
+  --chrome-height: 64px;
+  --footer-height: 88px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+main {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* !important: Tailwind CDN injects .flex after the bundled CSS in production. */
 .screen { display: none !important; }
-.screen.is-on { display: flex !important; flex-direction: column; }
+.screen {
+  min-height: 0 !important;
+}
+
+.screen.is-on {
+  display: flex !important;
+  flex-direction: column;
+}
+.screen.is-on.is-entering {
+  animation: screen-in 0.38s ease both;
+}
 .hidden { display: none !important; }
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 .noise-bg {
   position: fixed;
@@ -19,6 +60,38 @@
   background-size: 32px 32px;
 }
 
+#screen-start {
+  min-height: 100dvh !important;
+  height: 100dvh;
+}
+
+#screen-intent,
+#screen-group,
+#screen-map,
+#screen-radius,
+#screen-budget {
+  min-height: calc(100dvh - var(--chrome-height) - var(--footer-height)) !important;
+  height: calc(100dvh - var(--chrome-height) - var(--footer-height));
+}
+
+#screen-result,
+#screen-loop {
+  min-height: calc(100dvh - var(--chrome-height)) !important;
+  height: calc(100dvh - var(--chrome-height));
+}
+
+#screen-thanks {
+  min-height: 100dvh !important;
+  height: 100dvh;
+}
+
+#screen-intent,
+#screen-radius,
+#screen-result,
+#screen-thanks {
+  overflow-y: auto;
+}
+
 #map {
   height: 100%;
   min-height: 280px;
@@ -26,9 +99,29 @@
   background: #eeeeee;
 }
 
+#map-slot,
+#map-panel,
+#map,
+.leaflet-container {
+  isolation: isolate;
+  position: relative;
+  z-index: 0;
+}
+
 #map-panel {
   height: 100%;
   min-height: 280px;
+}
+
+#map-slot {
+  aspect-ratio: 16 / 8;
+  min-height: 220px;
+  max-height: min(34vh, 360px);
+}
+
+#radius-map-slot {
+  height: min(24vh, 224px);
+  min-height: 160px;
 }
 
 .leaflet-container {
@@ -36,17 +129,130 @@
   background: #eeeeee;
 }
 
-[data-intent].is-picked,
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .theme-grid {
+    gap: 24px;
+  }
+}
+
+.theme-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  width: 100%;
+  height: auto;
+  min-height: 132px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid #000;
+  background: #111;
+  color: #fff;
+  box-shadow: 4px 4px 0 #000;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.theme-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #9d00ff;
+}
+
+.theme-card-stage {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 132px;
+  overflow: hidden;
+  transition: min-height 0.4s ease;
+}
+
+@media (min-width: 768px) {
+  .theme-card {
+    min-height: 160px;
+  }
+
+  .theme-card-stage {
+    min-height: 160px;
+  }
+}
+
+.theme-card.is-picked {
+  transform: translate(-3px, -3px);
+  box-shadow: 8px 8px 0 #00ffff;
+  z-index: 2;
+}
+
+.theme-card.is-picked .theme-card-stage {
+  min-height: 210px;
+}
+
+@media (min-width: 768px) {
+  .theme-card.is-picked .theme-card-stage {
+    min-height: 220px;
+  }
+}
+
+.theme-card-track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  transition: transform 0.55s ease;
+}
+
+.theme-card-track img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.theme-card-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 14px 14px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+  pointer-events: none;
+}
+
+.theme-card-kicker {
+  display: block;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #00ffff;
+}
+
+.theme-card-title {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
 [data-group].is-picked {
   background: #00ffff;
   font-weight: 700;
   border-width: 2px;
   box-shadow: 4px 4px 0 #000;
-}
-
-[data-theme].is-picked {
-  background: #00ffff;
-  box-shadow: 4px 4px 0 #00ffff;
 }
 
 [data-budget].is-picked {
@@ -102,6 +308,76 @@ input[type="range"]::-moz-range-track {
   background: #000;
 }
 
+.place-search {
+  position: relative;
+  z-index: 60;
+}
+
+.place-search-results {
+  position: relative;
+  z-index: 60;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0 #000;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.place-search-results li {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #000;
+  background: #fff;
+  padding: 0;
+  text-align: left;
+}
+
+.place-search-results button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.place-search-results li:last-child {
+  border-bottom: 0;
+}
+
+.place-search-results button:hover,
+.place-search-results button:focus {
+  background: #00ffff;
+  outline: none;
+}
+
+.place-search-results .place-search-name {
+  display: block;
+  font-weight: 700;
+}
+
+.place-search-results .place-search-detail {
+  display: block;
+  font-size: 12px;
+  color: #3a4a49;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 button:disabled {
   opacity: 0.4;
   pointer-events: none;
@@ -121,6 +397,39 @@ button:disabled {
   background: #fff;
   box-shadow: 4px 4px 0 #000;
   font-weight: 700;
+}
+
+.result-cover {
+  position: relative;
+  overflow: hidden;
+}
+
+.result-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.result-cover-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+}
+
+@media (min-width: 768px) {
+  #screen-intent,
+  #screen-group,
+  #screen-map,
+  #screen-radius,
+  #screen-budget,
+  #screen-result,
+  #screen-loop,
+  #screen-thanks {
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

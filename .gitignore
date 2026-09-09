@@ -5,3 +5,6 @@ dist
 .env
 .env.*
 installer.html
+.vercel
+
+.vercel

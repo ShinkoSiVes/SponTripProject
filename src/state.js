@@ -1,14 +1,16 @@
+import { groupFitsTheme } from "./groups.js";
+
 const STORAGE_KEY = "spontrip-state-v1";
 
 export const STEPS = {
   START: 1,
   INTENT: 2,
   GROUP: 3,
-  THEME: 4,
+  THEME: 4, // old funnel step; remapped on load
   MAP: 5,
   RADIUS: 6,
   BUDGET: 7,
-  TRANSIT: 8,
+  TRANSIT: 8, // old funnel step; remapped on load
   RESULT: 10,
   LOOP: 11,
   THANKS: 12,
@@ -17,12 +19,27 @@ export const STEPS = {
 export const INPUT_STEPS = [
   STEPS.INTENT,
   STEPS.GROUP,
-  STEPS.THEME,
   STEPS.MAP,
   STEPS.RADIUS,
   STEPS.BUDGET,
-  STEPS.TRANSIT,
 ];
+
+const VALID_STEPS = new Set([
+  STEPS.START,
+  ...INPUT_STEPS,
+  STEPS.RESULT,
+  STEPS.LOOP,
+  STEPS.THANKS,
+]);
+
+const VALID_THEMES = new Set(["food", "date", "activities", "entertainment"]);
+
+export function searchRadiusKm(state) {
+  const km = Number(state.radiusKm);
+  const radius = Number.isFinite(km) && km > 0 ? km : 8;
+  if (state.transitMode === "walk") return Math.min(radius, 4);
+  return radius;
+}
 
 export function emptyState() {
   return {
@@ -47,7 +64,17 @@ export function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyState();
-    return { ...emptyState(), ...JSON.parse(raw) };
+    const loaded = { ...emptyState(), ...JSON.parse(raw) };
+    if (loaded.step === STEPS.THEME) loaded.step = STEPS.INTENT;
+    if (loaded.step === STEPS.TRANSIT) loaded.step = STEPS.RADIUS;
+    if (loaded.theme === "trips") loaded.theme = "activities";
+    if (loaded.theme === "travel") loaded.theme = "date";
+    if (loaded.theme && !VALID_THEMES.has(loaded.theme)) loaded.theme = null;
+    if (loaded.groupSize && !groupFitsTheme(loaded.groupSize, loaded.theme)) {
+      loaded.groupSize = null;
+    }
+    if (!VALID_STEPS.has(loaded.step)) loaded.step = STEPS.START;
+    return loaded;
   } catch {
     return emptyState();
   }
