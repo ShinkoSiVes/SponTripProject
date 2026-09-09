@@ -2,7 +2,7 @@
 
 A sponty-trip planner for friends who cannot pick a plan. Answer a short funnel, drop a pin, and get a matched stop in under two minutes.
 
-**Live:** [spontrip-iota.vercel.app](https://spontrip-iota.vercel.app)
+**Live:** [https://spontrip-theta.vercel.app](https://spontrip-theta.vercel.app)
 
 ## How it works
 
@@ -68,7 +68,7 @@ Without this key, nearby search falls back to Foursquare, then OpenStreetMap, th
 3. Create an API key
 4. Restrict it by HTTP referrer:
    - `http://localhost:5173/*`
-   - `https://your-vercel-domain.vercel.app/*`
+   - `https://spontrip-theta.vercel.app/*`
 5. Put it in `.env`:
 
 ```bash
